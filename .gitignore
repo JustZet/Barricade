@@ -1,0 +1,11 @@
+/Packages
+/ServerPackages
+/sourcemap.json
+/build
+*.rbxl
+*.rbxlx
+*.rbxl.lock
+*.rbxlx.lock
+
+# Intermediarele generatorului de asseturi; se refac cu `node gen.js`.
+assets/design-system/.work/

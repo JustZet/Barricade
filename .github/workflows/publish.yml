@@ -1,0 +1,34 @@
+name: Publicare
+
+# Doua declansatoare: un tag `v1.2.3`, sau butonul "Run workflow" din Actions.
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+jobs:
+  publicare:
+    name: Urca in Roblox
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Toolchain (aftman.toml)
+        uses: ok-nick/setup-aftman@v0.4.2
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      # Nu se publica nimic peste teste cazute.
+      - name: Verificari
+        run: lune run tools/check
+
+      - name: Build
+        run: lune run tools/build --rapid
+
+      - name: Open Cloud
+        env:
+          ROBLOX_API_KEY: ${{ secrets.ROBLOX_API_KEY }}
+          ROBLOX_UNIVERSE_ID: ${{ secrets.ROBLOX_UNIVERSE_ID }}
+          ROBLOX_PLACE_ID: ${{ secrets.ROBLOX_PLACE_ID }}
+        run: lune run tools/publish build/Barricade.rbxl

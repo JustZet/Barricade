@@ -1,0 +1,1086 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="" />
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet" />
+<style>
+  body { margin: 0; background: #2A1A0E; }
+  a { color: #C8722B; }
+  a:hover { color: #E87A2C; }
+  @keyframes bob { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-7px); } }
+  @keyframes pulseRing { 0%,100% { box-shadow: 0 0 0 0 rgba(255,214,102,.75), 0 6px 12px rgba(0,0,0,.35); } 50% { box-shadow: 0 0 0 8px rgba(255,214,102,0), 0 6px 12px rgba(0,0,0,.35); } }
+  @keyframes swing { 0%,100% { transform: rotate(-1.2deg); } 50% { transform: rotate(1.2deg); } }
+</style>
+</helmet>
+
+<div style="min-height:100vh;background:repeating-linear-gradient(91deg, rgba(0,0,0,.055) 0 3px, rgba(0,0,0,0) 3px 11px), linear-gradient(170deg,#4A2E17,#2A1A0E 70%);font-family:Nunito,system-ui,sans-serif;color:#FBF3E2;padding:56px 28px 120px">
+<div style="max-width:1180px;margin:0 auto;display:flex;flex-direction:column;gap:72px">
+
+  <!-- ======== COVER ======== -->
+  <div style="display:flex;flex-direction:column;gap:26px;align-items:center;text-align:center">
+    <div style="font-family:Nunito;font-size:12px;font-weight:800;letter-spacing:.32em;color:#D9A566">ROBLOX UI &amp; GAME ASSET SYSTEM</div>
+    <div style="display:flex;align-items:center;gap:14px">
+      <div style="width:22px;height:74px;border-radius:7px;background:linear-gradient(#D9A566,#A96C36);box-shadow:inset 0 3px 0 rgba(255,255,255,.4),inset 0 -5px 0 rgba(0,0,0,.22),0 7px 0 #5A3418"></div>
+      <div style="font-family:Fredoka,sans-serif;font-weight:700;font-size:clamp(46px,9vw,104px);line-height:.9;letter-spacing:.01em;color:#F7E3BE;text-shadow:0 3px 0 #B5763C,0 7px 0 #7A4A22,0 11px 0 #5A3418,0 16px 24px rgba(0,0,0,.5)">BARRICADE</div>
+      <div style="width:22px;height:74px;border-radius:7px;background:linear-gradient(#D9A566,#A96C36);box-shadow:inset 0 3px 0 rgba(255,255,255,.4),inset 0 -5px 0 rgba(0,0,0,.22),0 7px 0 #5A3418"></div>
+    </div>
+    <div style="max-width:620px;font-size:17px;line-height:1.6;color:#E2CBA6;text-wrap:pretty">A colorful wooden strategy board game brought to life inside Roblox. One material language across every screen: painted wood, warm paper, rope and tokens.</div>
+  </div>
+
+  <!-- ======== 1. LOGO LOCKUPS ======== -->
+  <div style="display:flex;flex-direction:column;gap:22px">
+    <div style="display:flex;align-items:baseline;gap:14px;border-bottom:2px solid rgba(217,165,102,.28);padding-bottom:12px">
+      <div style="font-family:Fredoka;font-size:13px;color:#D9A566;letter-spacing:.2em">01</div>
+      <div style="font-family:Fredoka;font-size:26px;color:#FBF3E2">Logo lockups</div>
+      <div style="margin-left:auto;font-size:13px;color:#B2946E">5 variants · type + CSS depth, artist-replaceable</div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:20px">
+      <!-- full -->
+      <div style="grid-column:1/-1;display:flex;flex-direction:column;gap:12px">
+        <div style="font-size:11px;font-weight:800;letter-spacing:.18em;color:#B2946E">FULL LOGO — menus, loading, thumbnail</div>
+        <div style="background:repeating-linear-gradient(92deg, rgba(0,0,0,.05) 0 3px, rgba(0,0,0,0) 3px 10px), linear-gradient(#EBD9BC,#DCC49E);border-radius:20px;padding:44px 24px;display:flex;flex-direction:column;align-items:center;gap:10px;box-shadow:inset 0 3px 0 rgba(255,255,255,.55),inset 0 -8px 0 rgba(122,74,34,.18),0 12px 24px rgba(0,0,0,.35)">
+          <div style="font-family:Fredoka;font-weight:700;font-size:clamp(38px,6.5vw,72px);line-height:.92;color:#F7E3BE;text-shadow:0 3px 0 #B5763C,0 6px 0 #7A4A22,0 9px 0 #5A3418,0 13px 16px rgba(0,0,0,.3)">BARRICADE</div>
+          <div style="display:flex;gap:6px;align-items:center">
+            <div style="width:38px;height:11px;border-radius:6px;background:#2F7FD1;box-shadow:inset 0 2px 0 rgba(255,255,255,.4),0 3px 0 #1D5590"></div>
+            <div style="width:38px;height:11px;border-radius:6px;background:#D9443F;box-shadow:inset 0 2px 0 rgba(255,255,255,.4),0 3px 0 #99241F"></div>
+            <div style="width:38px;height:11px;border-radius:6px;background:#4BA63C;box-shadow:inset 0 2px 0 rgba(255,255,255,.4),0 3px 0 #2F6B25"></div>
+            <div style="width:38px;height:11px;border-radius:6px;background:#E8B32B;box-shadow:inset 0 2px 0 rgba(255,255,255,.45),0 3px 0 #A8791A"></div>
+          </div>
+          <div style="font-family:Nunito;font-weight:800;font-size:12px;letter-spacing:.42em;color:#8A6034;margin-top:4px">STRATEGY BOARD GAME</div>
+        </div>
+      </div>
+
+      <!-- compact -->
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <div style="font-size:11px;font-weight:800;letter-spacing:.18em;color:#B2946E">COMPACT — HUD, matchmaking</div>
+        <div style="flex:1;background:linear-gradient(#EBD9BC,#DCC49E);border-radius:16px;padding:26px;display:flex;align-items:center;justify-content:center;box-shadow:inset 0 3px 0 rgba(255,255,255,.55),0 8px 18px rgba(0,0,0,.3)">
+          <div style="display:flex;align-items:center;gap:10px">
+            <div style="width:14px;height:34px;border-radius:5px;background:linear-gradient(#D9A566,#A96C36);box-shadow:inset 0 2px 0 rgba(255,255,255,.4),0 4px 0 #5A3418"></div>
+            <div style="font-family:Fredoka;font-weight:700;font-size:30px;color:#F7E3BE;text-shadow:0 2px 0 #B5763C,0 4px 0 #7A4A22,0 6px 0 #5A3418">BARRICADE</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- icon -->
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <div style="font-size:11px;font-weight:800;letter-spacing:.18em;color:#B2946E">GAME ICON — 512×512</div>
+        <div style="flex:1;background:linear-gradient(#EBD9BC,#DCC49E);border-radius:16px;padding:20px;display:flex;align-items:center;justify-content:center;box-shadow:inset 0 3px 0 rgba(255,255,255,.55),0 8px 18px rgba(0,0,0,.3)">
+          <div style="width:140px;height:140px;border-radius:30px;background:repeating-linear-gradient(92deg, rgba(0,0,0,.05) 0 3px, rgba(0,0,0,0) 3px 10px), linear-gradient(#C68B4E,#A96C36);box-shadow:inset 0 4px 0 rgba(255,255,255,.4),inset 0 -8px 0 rgba(0,0,0,.2),0 8px 0 #5A3418;position:relative;display:flex;align-items:center;justify-content:center">
+            <div style="position:absolute;top:34px;left:18px;width:104px;height:16px;border-radius:9px;background:#D9443F;box-shadow:inset 0 2px 0 rgba(255,255,255,.35),0 4px 0 #99241F"></div>
+            <div style="position:absolute;bottom:30px;left:18px;width:104px;height:16px;border-radius:9px;background:#2F7FD1;box-shadow:inset 0 2px 0 rgba(255,255,255,.35),0 4px 0 #1D5590"></div>
+            <div style="width:44px;height:44px;border-radius:50%;background:#E8B32B;box-shadow:inset 0 3px 0 rgba(255,255,255,.5),0 4px 0 #A8791A,0 6px 10px rgba(0,0,0,.3);z-index:2"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- mono -->
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <div style="font-size:11px;font-weight:800;letter-spacing:.18em;color:#B2946E">MONOCHROME — stamps, print</div>
+        <div style="flex:1;background:#FBF3E2;border-radius:16px;padding:26px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;box-shadow:0 8px 18px rgba(0,0,0,.3)">
+          <div style="font-family:Fredoka;font-weight:700;font-size:28px;color:#3B2412">BARRICADE</div>
+          <div style="display:flex;gap:5px">
+            <div style="width:30px;height:9px;border-radius:5px;background:#3B2412"></div>
+            <div style="width:30px;height:9px;border-radius:5px;background:#3B2412"></div>
+            <div style="width:30px;height:9px;border-radius:5px;background:#3B2412"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- small ui -->
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <div style="font-size:11px;font-weight:800;letter-spacing:.18em;color:#B2946E">SMALL UI — 24px tall minimum</div>
+        <div style="flex:1;background:#3B2412;border-radius:16px;padding:26px;display:flex;align-items:center;justify-content:center;gap:18px;box-shadow:0 8px 18px rgba(0,0,0,.3)">
+          <div style="display:flex;align-items:center;gap:7px">
+            <div style="width:26px;height:26px;border-radius:7px;background:linear-gradient(#C68B4E,#A96C36);position:relative;box-shadow:inset 0 2px 0 rgba(255,255,255,.35)">
+              <div style="position:absolute;top:6px;left:4px;width:18px;height:4px;border-radius:3px;background:#D9443F"></div>
+              <div style="position:absolute;bottom:6px;left:4px;width:18px;height:4px;border-radius:3px;background:#2F7FD1"></div>
+            </div>
+            <div style="font-family:Fredoka;font-size:15px;color:#EBD9BC">BARRICADE</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======== 2. COLOR ======== -->
+  <div style="display:flex;flex-direction:column;gap:22px">
+    <div style="display:flex;align-items:baseline;gap:14px;border-bottom:2px solid rgba(217,165,102,.28);padding-bottom:12px">
+      <div style="font-family:Fredoka;font-size:13px;color:#D9A566;letter-spacing:.2em">02</div>
+      <div style="font-family:Fredoka;font-size:26px;color:#FBF3E2">Color tokens</div>
+      <div style="margin-left:auto;font-size:13px;color:#B2946E">every player color also carries a shape + label</div>
+    </div>
+
+    <div style="font-size:11px;font-weight:800;letter-spacing:.18em;color:#B2946E">WOOD &amp; PAPER BASE</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px">
+      <div style="border-radius:14px;overflow:hidden;box-shadow:0 6px 14px rgba(0,0,0,.3)"><div style="height:74px;background:#EFD9AE"></div><div style="background:rgba(0,0,0,.28);padding:10px 12px"><div style="font-weight:800;font-size:13px">wood/100</div><div style="font-family:ui-monospace,monospace;font-size:12px;color:#C9AE86">#EFD9AE</div></div></div>
+      <div style="border-radius:14px;overflow:hidden;box-shadow:0 6px 14px rgba(0,0,0,.3)"><div style="height:74px;background:#D9A566"></div><div style="background:rgba(0,0,0,.28);padding:10px 12px"><div style="font-weight:800;font-size:13px">wood/300</div><div style="font-family:ui-monospace,monospace;font-size:12px;color:#C9AE86">#D9A566</div></div></div>
+      <div style="border-radius:14px;overflow:hidden;box-shadow:0 6px 14px rgba(0,0,0,.3)"><div style="height:74px;background:#B5763C"></div><div style="background:rgba(0,0,0,.28);padding:10px 12px"><div style="font-weight:800;font-size:13px">wood/500</div><div style="font-family:ui-monospace,monospace;font-size:12px;color:#C9AE86">#B5763C</div></div></div>
+      <div style="border-radius:14px;overflow:hidden;box-shadow:0 6px 14px rgba(0,0,0,.3)"><div style="height:74px;background:#7A4A22"></div><div style="background:rgba(0,0,0,.28);padding:10px 12px"><div style="font-weight:800;font-size:13px">wood/700</div><div style="font-family:ui-monospace,monospace;font-size:12px;color:#C9AE86">#7A4A22</div></div></div>
+      <div style="border-radius:14px;overflow:hidden;box-shadow:0 6px 14px rgba(0,0,0,.3)"><div style="height:74px;background:#3B2412"></div><div style="background:rgba(0,0,0,.28);padding:10px 12px"><div style="font-weight:800;font-size:13px">ink/900</div><div style="font-family:ui-monospace,monospace;font-size:12px;color:#C9AE86">#3B2412</div></div></div>
+      <div style="border-radius:14px;overflow:hidden;box-shadow:0 6px 14px rgba(0,0,0,.3)"><div style="height:74px;background:#FBF3E2"></div><div style="background:rgba(0,0,0,.28);padding:10px 12px"><div style="font-weight:800;font-size:13px">paper/50</div><div style="font-family:ui-monospace,monospace;font-size:12px;color:#C9AE86">#FBF3E2</div></div></div>
+      <div style="border-radius:14px;overflow:hidden;box-shadow:0 6px 14px rgba(0,0,0,.3)"><div style="height:74px;background:#EBD9BC"></div><div style="background:rgba(0,0,0,.28);padding:10px 12px"><div style="font-weight:800;font-size:13px">paper/200</div><div style="font-family:ui-monospace,monospace;font-size:12px;color:#C9AE86">#EBD9BC</div></div></div>
+    </div>
+
+    <div style="font-size:11px;font-weight:800;letter-spacing:.18em;color:#B2946E;margin-top:8px">PLAYER COLORS — color + shape pairing is mandatory</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px">
+      <div style="border-radius:14px;overflow:hidden;box-shadow:0 6px 14px rgba(0,0,0,.3)">
+        <div style="height:92px;background:#2F7FD1;display:flex;align-items:center;justify-content:center"><div style="width:34px;height:34px;border-radius:50%;background:#FBF3E2"></div></div>
+        <div style="background:rgba(0,0,0,.28);padding:10px 12px"><div style="font-weight:800;font-size:13px">player/blue · circle</div><div style="font-family:ui-monospace,monospace;font-size:12px;color:#C9AE86">#2F7FD1 / dk #1D5590</div></div>
+      </div>
+      <div style="border-radius:14px;overflow:hidden;box-shadow:0 6px 14px rgba(0,0,0,.3)">
+        <div style="height:92px;background:#D9443F;display:flex;align-items:center;justify-content:center"><div style="width:32px;height:32px;background:#FBF3E2;transform:rotate(45deg);border-radius:4px"></div></div>
+        <div style="background:rgba(0,0,0,.28);padding:10px 12px"><div style="font-weight:800;font-size:13px">player/red · diamond</div><div style="font-family:ui-monospace,monospace;font-size:12px;color:#C9AE86">#D9443F / dk #99241F</div></div>
+      </div>
+      <div style="border-radius:14px;overflow:hidden;box-shadow:0 6px 14px rgba(0,0,0,.3)">
+        <div style="height:92px;background:#4BA63C;display:flex;align-items:center;justify-content:center"><div style="width:32px;height:32px;background:#FBF3E2;border-radius:5px"></div></div>
+        <div style="background:rgba(0,0,0,.28);padding:10px 12px"><div style="font-weight:800;font-size:13px">player/green · square</div><div style="font-family:ui-monospace,monospace;font-size:12px;color:#C9AE86">#4BA63C / dk #2F6B25</div></div>
+      </div>
+      <div style="border-radius:14px;overflow:hidden;box-shadow:0 6px 14px rgba(0,0,0,.3)">
+        <div style="height:92px;background:#E8B32B;display:flex;align-items:center;justify-content:center"><div style="width:0;height:0;border-left:18px solid transparent;border-right:18px solid transparent;border-bottom:30px solid #FBF3E2"></div></div>
+        <div style="background:rgba(0,0,0,.28);padding:10px 12px"><div style="font-weight:800;font-size:13px">player/yellow · triangle</div><div style="font-family:ui-monospace,monospace;font-size:12px;color:#C9AE86">#E8B32B / dk #A8791A</div></div>
+      </div>
+    </div>
+
+    <div style="font-size:11px;font-weight:800;letter-spacing:.18em;color:#B2946E;margin-top:8px">ACCENTS &amp; FEEDBACK</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px">
+      <div style="border-radius:14px;overflow:hidden;box-shadow:0 6px 14px rgba(0,0,0,.3)"><div style="height:64px;background:#E87A2C"></div><div style="background:rgba(0,0,0,.28);padding:10px 12px"><div style="font-weight:800;font-size:13px">accent/orange</div><div style="font-family:ui-monospace,monospace;font-size:12px;color:#C9AE86">#E87A2C</div></div></div>
+      <div style="border-radius:14px;overflow:hidden;box-shadow:0 6px 14px rgba(0,0,0,.3)"><div style="height:64px;background:#2FA89B"></div><div style="background:rgba(0,0,0,.28);padding:10px 12px"><div style="font-weight:800;font-size:13px">accent/teal</div><div style="font-family:ui-monospace,monospace;font-size:12px;color:#C9AE86">#2FA89B</div></div></div>
+      <div style="border-radius:14px;overflow:hidden;box-shadow:0 6px 14px rgba(0,0,0,.3)"><div style="height:64px;background:#8B5FC4"></div><div style="background:rgba(0,0,0,.28);padding:10px 12px"><div style="font-weight:800;font-size:13px">accent/purple</div><div style="font-family:ui-monospace,monospace;font-size:12px;color:#C9AE86">#8B5FC4</div></div></div>
+      <div style="border-radius:14px;overflow:hidden;box-shadow:0 6px 14px rgba(0,0,0,.3)"><div style="height:64px;background:#FFD666"></div><div style="background:rgba(0,0,0,.28);padding:10px 12px"><div style="font-weight:800;font-size:13px">state/highlight</div><div style="font-family:ui-monospace,monospace;font-size:12px;color:#C9AE86">#FFD666</div></div></div>
+    </div>
+  </div>
+
+  <!-- ======== 3. TYPE ======== -->
+  <div style="display:flex;flex-direction:column;gap:22px">
+    <div style="display:flex;align-items:baseline;gap:14px;border-bottom:2px solid rgba(217,165,102,.28);padding-bottom:12px">
+      <div style="font-family:Fredoka;font-size:13px;color:#D9A566;letter-spacing:.2em">03</div>
+      <div style="font-family:Fredoka;font-size:26px;color:#FBF3E2">Typography</div>
+      <div style="margin-left:auto;font-size:13px;color:#B2946E">Fredoka display · Nunito UI</div>
+    </div>
+    <div style="background:#FBF3E2;color:#3B2412;border-radius:18px;padding:32px;display:flex;flex-direction:column;gap:20px;box-shadow:0 10px 22px rgba(0,0,0,.3)">
+      <div style="display:flex;flex-wrap:wrap;align-items:baseline;gap:18px;border-bottom:1px dashed rgba(59,36,18,.25);padding-bottom:16px"><div style="font-family:Fredoka;font-weight:700;font-size:56px;line-height:1">Game title</div><div style="font-family:ui-monospace,monospace;font-size:12px;color:#8A6034">Fredoka 700 · 96px @1080p · tracking +1%</div></div>
+      <div style="display:flex;flex-wrap:wrap;align-items:baseline;gap:18px;border-bottom:1px dashed rgba(59,36,18,.25);padding-bottom:16px"><div style="font-family:Fredoka;font-weight:600;font-size:40px;line-height:1">Page title</div><div style="font-family:ui-monospace,monospace;font-size:12px;color:#8A6034">Fredoka 600 · 56px</div></div>
+      <div style="display:flex;flex-wrap:wrap;align-items:baseline;gap:18px;border-bottom:1px dashed rgba(59,36,18,.25);padding-bottom:16px"><div style="font-family:Fredoka;font-weight:600;font-size:26px;line-height:1">Section title</div><div style="font-family:ui-monospace,monospace;font-size:12px;color:#8A6034">Fredoka 600 · 36px</div></div>
+      <div style="display:flex;flex-wrap:wrap;align-items:baseline;gap:18px;border-bottom:1px dashed rgba(59,36,18,.25);padding-bottom:16px"><div style="font-family:Fredoka;font-weight:600;font-size:20px;letter-spacing:.06em;line-height:1">BUTTON TITLE</div><div style="font-family:ui-monospace,monospace;font-size:12px;color:#8A6034">Fredoka 600 · 28px · tracking +6% · uppercase</div></div>
+      <div style="display:flex;flex-wrap:wrap;align-items:baseline;gap:18px;border-bottom:1px dashed rgba(59,36,18,.25);padding-bottom:16px"><div style="font-weight:600;font-size:17px;max-width:520px;line-height:1.55">Body copy carries the rules text. Nunito 600 at 24px on a 1080p screen, never below 24px in gameplay.</div><div style="font-family:ui-monospace,monospace;font-size:12px;color:#8A6034">Nunito 600 · 24px</div></div>
+      <div style="display:flex;flex-wrap:wrap;align-items:baseline;gap:18px"><div style="font-weight:800;font-size:12px;letter-spacing:.16em">SMALL INFORMATION</div><div style="font-family:ui-monospace,monospace;font-size:12px;color:#8A6034">Nunito 800 · 18px · tracking +16%</div></div>
+    </div>
+  </div>
+
+  <!-- ======== 4. MATERIALS ======== -->
+  <div style="display:flex;flex-direction:column;gap:22px">
+    <div style="display:flex;align-items:baseline;gap:14px;border-bottom:2px solid rgba(217,165,102,.28);padding-bottom:12px">
+      <div style="font-family:Fredoka;font-size:13px;color:#D9A566;letter-spacing:.2em">04</div>
+      <div style="font-family:Fredoka;font-size:26px;color:#FBF3E2">Materials &amp; surfaces</div>
+      <div style="margin-left:auto;font-size:13px;color:#B2946E">light from above · 3px top highlight · 6px bottom edge</div>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:18px">
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <div style="height:130px;border-radius:16px;background:repeating-linear-gradient(92deg, rgba(0,0,0,.05) 0 3px, rgba(0,0,0,0) 3px 11px), linear-gradient(#C68B4E,#A96C36);box-shadow:inset 0 3px 0 rgba(255,255,255,.4),inset 0 -8px 0 rgba(0,0,0,.2),0 8px 0 #5A3418,0 14px 22px rgba(0,0,0,.3)"></div>
+        <div style="font-weight:800;font-size:13px">Wood panel</div><div style="font-size:12px;color:#B2946E">Primary panels, modals, buttons. r=16, edge 8px</div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <div style="height:130px;border-radius:16px;background:repeating-linear-gradient(90deg, rgba(0,0,0,.04) 0 2px, rgba(0,0,0,0) 2px 9px), linear-gradient(#EFD9AE,#D9BE8E);box-shadow:inset 0 3px 0 rgba(255,255,255,.6),inset 0 -8px 0 rgba(122,74,34,.16),0 8px 0 #B5763C,0 14px 22px rgba(0,0,0,.3)"></div>
+        <div style="font-weight:800;font-size:13px">Light wood / board</div><div style="font-size:12px;color:#B2946E">Board surface, cell base, tabletop</div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <div style="height:130px;border-radius:12px;background:radial-gradient(120% 90% at 20% 0%, rgba(255,255,255,.7), rgba(0,0,0,0)), #FBF3E2;box-shadow:inset 0 0 0 1px rgba(122,74,34,.18),0 8px 18px rgba(0,0,0,.3)"></div>
+        <div style="font-weight:800;font-size:13px">Paper card</div><div style="font-size:12px;color:#B2946E">Tutorial cards, shop items, tooltips. r=12</div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <div style="height:130px;border-radius:16px;background:repeating-linear-gradient(45deg, rgba(0,0,0,.05) 0 4px, rgba(0,0,0,0) 4px 8px), linear-gradient(#2FA89B,#217D74);box-shadow:inset 0 3px 0 rgba(255,255,255,.28),0 8px 18px rgba(0,0,0,.3)"></div>
+        <div style="font-weight:800;font-size:13px">Fabric / felt</div><div style="font-size:12px;color:#B2946E">Tabletop mat behind the board</div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <div style="height:130px;border-radius:16px;background:linear-gradient(#EFD9AE,#D9BE8E);box-shadow:inset 0 0 0 10px #B5763C,inset 0 0 0 13px #7A4A22,0 8px 18px rgba(0,0,0,.3)"></div>
+        <div style="font-weight:800;font-size:13px">Wooden frame</div><div style="font-size:12px;color:#B2946E">Board border and panel trim, 10+3px</div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <div style="height:130px;border-radius:16px;background:linear-gradient(#5A3418,#3B2412);display:flex;align-items:flex-start;justify-content:center;box-shadow:0 8px 18px rgba(0,0,0,.3);overflow:hidden">
+          <div style="width:6px;height:60px;background:repeating-linear-gradient(120deg,#C69A5E 0 4px,#8A6034 4px 8px)"></div>
+          <div style="width:110px;height:14px;border-radius:8px;background:linear-gradient(#D9A566,#A96C36);margin-top:54px;box-shadow:inset 0 2px 0 rgba(255,255,255,.35),0 4px 0 #5A3418"></div>
+          <div style="width:6px;height:60px;background:repeating-linear-gradient(60deg,#C69A5E 0 4px,#8A6034 4px 8px)"></div>
+        </div>
+        <div style="font-weight:800;font-size:13px">Rope + hanging sign</div><div style="font-size:12px;color:#B2946E">Turn indicator, section banners</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======== 5. BUTTONS ======== -->
+  <div style="display:flex;flex-direction:column;gap:22px">
+    <div style="display:flex;align-items:baseline;gap:14px;border-bottom:2px solid rgba(217,165,102,.28);padding-bottom:12px">
+      <div style="font-family:Fredoka;font-size:13px;color:#D9A566;letter-spacing:.2em">05</div>
+      <div style="font-family:Fredoka;font-size:26px;color:#FBF3E2">Button system</div>
+      <div style="margin-left:auto;font-size:13px;color:#B2946E">hover ↑2px · press ↓4px · text stays a Roblox TextLabel</div>
+    </div>
+
+    <div style="background:linear-gradient(#EFD9AE,#E0C79C);border-radius:20px;padding:30px;display:flex;flex-direction:column;gap:26px;box-shadow:inset 0 3px 0 rgba(255,255,255,.55),0 10px 22px rgba(0,0,0,.3)">
+
+      <div style="display:flex;flex-direction:column;gap:14px">
+        <div style="font-size:11px;font-weight:800;letter-spacing:.18em;color:#8A6034">SIZES &amp; VARIANTS · interactive</div>
+        <div style="display:flex;flex-wrap:wrap;gap:16px;align-items:flex-end">
+          <button type="button" style="border:none;cursor:pointer;font-family:Fredoka;font-weight:600;font-size:26px;letter-spacing:.06em;color:#FFF8E6;background:linear-gradient(#5CC24A,#41972F);padding:20px 46px;border-radius:18px;box-shadow:inset 0 3px 0 rgba(255,255,255,.45),inset 0 -6px 0 rgba(0,0,0,.18),0 8px 0 #2A6520,0 14px 20px rgba(0,0,0,.28);text-shadow:0 2px 0 rgba(0,0,0,.25);transition:transform .08s ease,box-shadow .08s ease" style-hover="transform:translateY(-2px);box-shadow:inset 0 3px 0 rgba(255,255,255,.45),inset 0 -6px 0 rgba(0,0,0,.18),0 10px 0 #2A6520,0 18px 24px rgba(0,0,0,.3)" style-active="transform:translateY(5px);box-shadow:inset 0 3px 0 rgba(255,255,255,.35),inset 0 -3px 0 rgba(0,0,0,.18),0 3px 0 #2A6520,0 6px 10px rgba(0,0,0,.25)">PLAY</button>
+          <button type="button" style="border:none;cursor:pointer;font-family:Fredoka;font-weight:600;font-size:20px;letter-spacing:.06em;color:#FFF8E6;background:linear-gradient(#D9A566,#B5763C);padding:15px 32px;border-radius:14px;box-shadow:inset 0 3px 0 rgba(255,255,255,.4),inset 0 -5px 0 rgba(0,0,0,.18),0 6px 0 #6E3F1B,0 10px 16px rgba(0,0,0,.25);text-shadow:0 2px 0 rgba(0,0,0,.25);transition:transform .08s ease,box-shadow .08s ease" style-hover="transform:translateY(-2px)" style-active="transform:translateY(4px);box-shadow:inset 0 3px 0 rgba(255,255,255,.3),0 2px 0 #6E3F1B">SECONDARY</button>
+          <button type="button" style="border:none;cursor:pointer;font-family:Fredoka;font-weight:600;font-size:15px;letter-spacing:.06em;color:#FFF8E6;background:linear-gradient(#D9A566,#B5763C);padding:10px 20px;border-radius:11px;box-shadow:inset 0 2px 0 rgba(255,255,255,.4),0 4px 0 #6E3F1B,0 7px 12px rgba(0,0,0,.25);text-shadow:0 1px 0 rgba(0,0,0,.25);transition:transform .08s ease" style-active="transform:translateY(3px);box-shadow:inset 0 2px 0 rgba(255,255,255,.3),0 1px 0 #6E3F1B">SMALL</button>
+          <button type="button" aria-label="Settings" style="border:none;cursor:pointer;width:58px;height:58px;border-radius:16px;background:linear-gradient(#D9A566,#B5763C);display:grid;place-items:center;box-shadow:inset 0 3px 0 rgba(255,255,255,.4),0 6px 0 #6E3F1B,0 10px 16px rgba(0,0,0,.25);transition:transform .08s ease" style-active="transform:translateY(4px);box-shadow:inset 0 3px 0 rgba(255,255,255,.3),0 2px 0 #6E3F1B">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#FFF8E6" stroke-width="2.4" stroke-linecap="round"><circle cx="12" cy="12" r="3.4" /><circle cx="12" cy="12" r="8.4" stroke-dasharray="3.6 3.6" /></svg>
+          </button>
+          <button type="button" aria-label="Back" style="border:none;cursor:pointer;width:58px;height:58px;border-radius:16px;background:linear-gradient(#EFD9AE,#D2B384);display:grid;place-items:center;box-shadow:inset 0 3px 0 rgba(255,255,255,.6),0 6px 0 #A9803F,0 10px 16px rgba(0,0,0,.25);transition:transform .08s ease" style-active="transform:translateY(4px);box-shadow:inset 0 3px 0 rgba(255,255,255,.5),0 2px 0 #A9803F">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#5A3418" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="14,5 7,12 14,19" /></svg>
+          </button>
+          <button type="button" aria-label="Close" style="border:none;cursor:pointer;width:58px;height:58px;border-radius:16px;background:linear-gradient(#E4635E,#C2352F);display:grid;place-items:center;box-shadow:inset 0 3px 0 rgba(255,255,255,.35),0 6px 0 #8C1F1A,0 10px 16px rgba(0,0,0,.25);transition:transform .08s ease" style-active="transform:translateY(4px);box-shadow:inset 0 3px 0 rgba(255,255,255,.3),0 2px 0 #8C1F1A">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#FFF8E6" stroke-width="3.2" stroke-linecap="round"><line x1="6" y1="6" x2="18" y2="18" /><line x1="18" y1="6" x2="6" y2="18" /></svg>
+          </button>
+        </div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:14px">
+        <div style="font-size:11px;font-weight:800;letter-spacing:.18em;color:#8A6034">STATE MATRIX · primary</div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px">
+          <div style="display:flex;flex-direction:column;gap:10px;align-items:center"><div style="font-family:Fredoka;font-weight:600;font-size:18px;letter-spacing:.06em;color:#FFF8E6;background:linear-gradient(#5CC24A,#41972F);padding:15px 26px;border-radius:14px;box-shadow:inset 0 3px 0 rgba(255,255,255,.45),0 7px 0 #2A6520,0 11px 16px rgba(0,0,0,.25);text-shadow:0 2px 0 rgba(0,0,0,.25)">READY</div><div style="font-size:11px;font-weight:800;letter-spacing:.14em;color:#8A6034">NORMAL</div></div>
+          <div style="display:flex;flex-direction:column;gap:10px;align-items:center"><div style="font-family:Fredoka;font-weight:600;font-size:18px;letter-spacing:.06em;color:#FFF8E6;background:linear-gradient(#6BD256,#4CA837);padding:15px 26px;border-radius:14px;transform:translateY(-2px);box-shadow:inset 0 3px 0 rgba(255,255,255,.5),0 9px 0 #2A6520,0 16px 22px rgba(0,0,0,.28);text-shadow:0 2px 0 rgba(0,0,0,.25)">READY</div><div style="font-size:11px;font-weight:800;letter-spacing:.14em;color:#8A6034">HOVER +2px</div></div>
+          <div style="display:flex;flex-direction:column;gap:10px;align-items:center"><div style="font-family:Fredoka;font-weight:600;font-size:18px;letter-spacing:.06em;color:#FFF8E6;background:linear-gradient(#49A538,#3C8B2C);padding:15px 26px;border-radius:14px;transform:translateY(5px);box-shadow:inset 0 3px 0 rgba(255,255,255,.3),0 2px 0 #2A6520,0 4px 8px rgba(0,0,0,.25);text-shadow:0 1px 0 rgba(0,0,0,.25)">READY</div><div style="font-size:11px;font-weight:800;letter-spacing:.14em;color:#8A6034">PRESSED −5px</div></div>
+          <div style="display:flex;flex-direction:column;gap:10px;align-items:center"><div style="font-family:Fredoka;font-weight:600;font-size:18px;letter-spacing:.06em;color:#A08A6A;background:linear-gradient(#CFC0A4,#B8A88C);padding:15px 26px;border-radius:14px;box-shadow:inset 0 3px 0 rgba(255,255,255,.3),0 5px 0 #97896F">READY</div><div style="font-size:11px;font-weight:800;letter-spacing:.14em;color:#8A6034">DISABLED</div></div>
+          <div style="display:flex;flex-direction:column;gap:10px;align-items:center"><div style="font-family:Fredoka;font-weight:600;font-size:18px;letter-spacing:.06em;color:#FFF8E6;background:linear-gradient(#5CC24A,#41972F);padding:15px 26px;border-radius:14px;box-shadow:0 0 0 4px #FFD666,inset 0 3px 0 rgba(255,255,255,.45),0 7px 0 #2A6520,0 11px 16px rgba(0,0,0,.25);text-shadow:0 2px 0 rgba(0,0,0,.25)">READY</div><div style="font-size:11px;font-weight:800;letter-spacing:.14em;color:#8A6034">SELECTED</div></div>
+        </div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:14px">
+        <div style="font-size:11px;font-weight:800;letter-spacing:.18em;color:#8A6034">SEMANTIC FILLS · same geometry, swapped paint</div>
+        <div style="display:flex;flex-wrap:wrap;gap:12px">
+          <div style="font-family:Fredoka;font-weight:600;font-size:17px;letter-spacing:.06em;color:#FFF8E6;background:linear-gradient(#5CC24A,#41972F);padding:13px 24px;border-radius:13px;box-shadow:inset 0 3px 0 rgba(255,255,255,.45),0 6px 0 #2A6520">CONFIRM</div>
+          <div style="font-family:Fredoka;font-weight:600;font-size:17px;letter-spacing:.06em;color:#FFF8E6;background:linear-gradient(#E4635E,#C2352F);padding:13px 24px;border-radius:13px;box-shadow:inset 0 3px 0 rgba(255,255,255,.35),0 6px 0 #8C1F1A">LEAVE</div>
+          <div style="font-family:Fredoka;font-weight:600;font-size:17px;letter-spacing:.06em;color:#FFF8E6;background:linear-gradient(#F0903F,#D2661F);padding:13px 24px;border-radius:13px;box-shadow:inset 0 3px 0 rgba(255,255,255,.4),0 6px 0 #9E4A12">REMATCH</div>
+          <div style="font-family:Fredoka;font-weight:600;font-size:17px;letter-spacing:.06em;color:#FFF8E6;background:linear-gradient(#3FBBAD,#25897E);padding:13px 24px;border-radius:13px;box-shadow:inset 0 3px 0 rgba(255,255,255,.4),0 6px 0 #1A6660">HOW TO PLAY</div>
+          <div style="font-family:Fredoka;font-weight:600;font-size:17px;letter-spacing:.06em;color:#FFF8E6;background:linear-gradient(#9E73D4,#7A4CB4);padding:13px 24px;border-radius:13px;box-shadow:inset 0 3px 0 rgba(255,255,255,.4),0 6px 0 #5C3490">SHOP</div>
+          <div style="font-family:Fredoka;font-weight:600;font-size:17px;letter-spacing:.06em;color:#5A3418;background:linear-gradient(#EFD9AE,#D2B384);padding:13px 24px;border-radius:13px;box-shadow:inset 0 3px 0 rgba(255,255,255,.6),0 6px 0 #A9803F">CANCEL</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======== 6. GAME PIECES ======== -->
+  <div style="display:flex;flex-direction:column;gap:22px">
+    <div style="display:flex;align-items:baseline;gap:14px;border-bottom:2px solid rgba(217,165,102,.28);padding-bottom:12px">
+      <div style="font-family:Fredoka;font-size:13px;color:#D9A566;letter-spacing:.2em">06</div>
+      <div style="font-family:Fredoka;font-size:26px;color:#FBF3E2">Tokens &amp; barricades</div>
+      <div style="margin-left:auto;font-size:13px;color:#B2946E">shape-coded for colorblind play</div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:18px">
+      <div style="background:linear-gradient(#EFD9AE,#E0C79C);border-radius:18px;padding:26px;display:flex;flex-direction:column;gap:20px;box-shadow:inset 0 3px 0 rgba(255,255,255,.55),0 10px 20px rgba(0,0,0,.3)">
+        <div style="font-size:11px;font-weight:800;letter-spacing:.18em;color:#8A6034">PLAYER TOKENS · 4 colors</div>
+        <div style="display:flex;gap:18px;flex-wrap:wrap">
+          <div style="display:flex;flex-direction:column;align-items:center;gap:8px"><div style="width:74px;height:74px;border-radius:50%;background:linear-gradient(#D9A566,#A96C36);padding:7px;box-shadow:0 6px 0 #5A3418,0 10px 14px rgba(0,0,0,.3)"><div style="width:100%;height:100%;border-radius:50%;background:linear-gradient(#4A99E0,#2266B0);display:grid;place-items:center;box-shadow:inset 0 3px 0 rgba(255,255,255,.45)"><div style="width:26px;height:26px;border-radius:50%;background:#FBF3E2"></div></div></div><div style="font-size:11px;font-weight:800;color:#8A6034">BLUE</div></div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:8px"><div style="width:74px;height:74px;border-radius:50%;background:linear-gradient(#D9A566,#A96C36);padding:7px;box-shadow:0 6px 0 #5A3418,0 10px 14px rgba(0,0,0,.3)"><div style="width:100%;height:100%;border-radius:50%;background:linear-gradient(#E4635E,#C2352F);display:grid;place-items:center;box-shadow:inset 0 3px 0 rgba(255,255,255,.4)"><div style="width:24px;height:24px;background:#FBF3E2;transform:rotate(45deg);border-radius:3px"></div></div></div><div style="font-size:11px;font-weight:800;color:#8A6034">RED</div></div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:8px"><div style="width:74px;height:74px;border-radius:50%;background:linear-gradient(#D9A566,#A96C36);padding:7px;box-shadow:0 6px 0 #5A3418,0 10px 14px rgba(0,0,0,.3)"><div style="width:100%;height:100%;border-radius:50%;background:linear-gradient(#5CC24A,#41972F);display:grid;place-items:center;box-shadow:inset 0 3px 0 rgba(255,255,255,.4)"><div style="width:24px;height:24px;background:#FBF3E2;border-radius:4px"></div></div></div><div style="font-size:11px;font-weight:800;color:#8A6034">GREEN</div></div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:8px"><div style="width:74px;height:74px;border-radius:50%;background:linear-gradient(#D9A566,#A96C36);padding:7px;box-shadow:0 6px 0 #5A3418,0 10px 14px rgba(0,0,0,.3)"><div style="width:100%;height:100%;border-radius:50%;background:linear-gradient(#F2C34A,#D19A1C);display:grid;place-items:center;box-shadow:inset 0 3px 0 rgba(255,255,255,.45)"><div style="width:0;height:0;border-left:13px solid transparent;border-right:13px solid transparent;border-bottom:22px solid #FBF3E2"></div></div></div><div style="font-size:11px;font-weight:800;color:#8A6034">YELLOW</div></div>
+        </div>
+
+        <div style="font-size:11px;font-weight:800;letter-spacing:.18em;color:#8A6034">TOKEN STATES</div>
+        <div style="display:flex;gap:18px;flex-wrap:wrap;align-items:flex-start">
+          <div style="display:flex;flex-direction:column;align-items:center;gap:8px"><div style="width:62px;height:62px;border-radius:50%;background:linear-gradient(#D9A566,#A96C36);padding:6px;box-shadow:0 5px 0 #5A3418"><div style="width:100%;height:100%;border-radius:50%;background:linear-gradient(#4A99E0,#2266B0);display:grid;place-items:center"><div style="width:20px;height:20px;border-radius:50%;background:#FBF3E2"></div></div></div><div style="font-size:10px;font-weight:800;color:#8A6034">NORMAL</div></div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:8px"><div style="animation:bob 1.4s ease-in-out infinite"><div style="width:62px;height:62px;border-radius:50%;background:linear-gradient(#FFE08A,#E8B32B);padding:6px;animation:pulseRing 1.6s ease-in-out infinite"><div style="width:100%;height:100%;border-radius:50%;background:linear-gradient(#4A99E0,#2266B0);display:grid;place-items:center"><div style="width:20px;height:20px;border-radius:50%;background:#FBF3E2"></div></div></div></div><div style="font-size:10px;font-weight:800;color:#8A6034">ACTIVE TURN</div></div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:8px"><div style="width:62px;height:62px;border-radius:50%;background:linear-gradient(#D9A566,#A96C36);padding:6px;box-shadow:0 0 0 4px #FFD666,0 5px 0 #5A3418"><div style="width:100%;height:100%;border-radius:50%;background:linear-gradient(#4A99E0,#2266B0);display:grid;place-items:center"><div style="width:20px;height:20px;border-radius:50%;background:#FBF3E2"></div></div></div><div style="font-size:10px;font-weight:800;color:#8A6034">SELECTED</div></div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:8px"><div style="position:relative;width:62px;height:62px;border-radius:50%;background:linear-gradient(#FFE08A,#E8B32B);padding:6px;box-shadow:0 5px 0 #A8791A"><div style="width:100%;height:100%;border-radius:50%;background:linear-gradient(#4A99E0,#2266B0);display:grid;place-items:center"><div style="width:20px;height:20px;border-radius:50%;background:#FBF3E2"></div></div><div style="position:absolute;top:-14px;left:50%;transform:translateX(-50%);width:0;height:0;border-left:11px solid transparent;border-right:11px solid transparent;border-bottom:15px solid #E8B32B"></div></div><div style="font-size:10px;font-weight:800;color:#8A6034">VICTORY</div></div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:8px"><div style="width:62px;height:62px;border-radius:50%;background:linear-gradient(#C3B49B,#A2937C);padding:6px;opacity:.6;position:relative"><div style="width:100%;height:100%;border-radius:50%;background:linear-gradient(#8C9AA8,#6B7885);display:grid;place-items:center"><svg width="20" height="20" viewBox="0 0 24 24" stroke="#FBF3E2" stroke-width="3.4" stroke-linecap="round"><line x1="6" y1="6" x2="18" y2="18" /><line x1="18" y1="6" x2="6" y2="18" /></svg></div></div><div style="font-size:10px;font-weight:800;color:#8A6034">ELIMINATED</div></div>
+        </div>
+      </div>
+
+      <div style="background:linear-gradient(#EFD9AE,#E0C79C);border-radius:18px;padding:26px;display:flex;flex-direction:column;gap:20px;box-shadow:inset 0 3px 0 rgba(255,255,255,.55),0 10px 20px rgba(0,0,0,.3)">
+        <div style="font-size:11px;font-weight:800;letter-spacing:.18em;color:#8A6034">BARRICADE PIECES</div>
+        <div style="display:flex;gap:26px;flex-wrap:wrap;align-items:flex-end">
+          <div style="display:flex;flex-direction:column;gap:10px;align-items:center"><div style="width:130px;height:24px;border-radius:12px;background:repeating-linear-gradient(90deg, rgba(0,0,0,.05) 0 3px, rgba(0,0,0,0) 3px 10px), linear-gradient(#C68B4E,#9C6330);box-shadow:inset 0 3px 0 rgba(255,255,255,.4),inset 0 -4px 0 rgba(0,0,0,.2),0 5px 0 #5A3418,0 9px 12px rgba(0,0,0,.3)"></div><div style="font-size:10px;font-weight:800;color:#8A6034">HORIZONTAL</div></div>
+          <div style="display:flex;flex-direction:column;gap:10px;align-items:center"><div style="width:24px;height:130px;border-radius:12px;background:repeating-linear-gradient(0deg, rgba(0,0,0,.05) 0 3px, rgba(0,0,0,0) 3px 10px), linear-gradient(90deg,#C68B4E,#9C6330);box-shadow:inset 3px 0 0 rgba(255,255,255,.35),0 5px 0 #5A3418,0 9px 12px rgba(0,0,0,.3)"></div><div style="font-size:10px;font-weight:800;color:#8A6034">VERTICAL</div></div>
+          <div style="display:flex;flex-direction:column;gap:10px;align-items:center"><div style="width:130px;height:24px;border-radius:12px;background:linear-gradient(#C68B4E,#9C6330);opacity:.4"></div><div style="font-size:10px;font-weight:800;color:#8A6034">PREVIEW 40%</div></div>
+          <div style="display:flex;flex-direction:column;gap:10px;align-items:center"><div style="width:130px;height:24px;border-radius:12px;background:linear-gradient(#5CC24A,#41972F);box-shadow:0 0 0 3px #FFF8E6,0 5px 0 #2A6520;display:grid;place-items:center"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#FFF8E6" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><polyline points="4,13 10,19 20,6" /></svg></div><div style="font-size:10px;font-weight:800;color:#8A6034">VALID + ✓</div></div>
+          <div style="display:flex;flex-direction:column;gap:10px;align-items:center"><div style="width:130px;height:24px;border-radius:12px;background:repeating-linear-gradient(45deg,#C2352F 0 6px,#8C1F1A 6px 12px);box-shadow:0 0 0 3px #FFF8E6;display:grid;place-items:center"><svg width="13" height="13" viewBox="0 0 24 24" stroke="#FFF8E6" stroke-width="4.2" stroke-linecap="round"><line x1="6" y1="6" x2="18" y2="18" /><line x1="18" y1="6" x2="6" y2="18" /></svg></div><div style="font-size:10px;font-weight:800;color:#8A6034">INVALID + ✕</div></div>
+        </div>
+
+        <div style="font-size:11px;font-weight:800;letter-spacing:.18em;color:#8A6034">BARRICADE COUNTER</div>
+        <div style="display:flex;gap:16px;flex-wrap:wrap;align-items:center">
+          <div style="background:linear-gradient(#C68B4E,#A96C36);border-radius:16px;padding:14px 20px;display:flex;flex-direction:column;align-items:center;gap:6px;box-shadow:inset 0 3px 0 rgba(255,255,255,.4),0 6px 0 #5A3418">
+            <div style="display:flex;align-items:center;gap:8px"><div style="display:flex;flex-direction:column;gap:2px"><div style="width:20px;height:6px;border-radius:3px;background:#EFD9AE"></div><div style="width:20px;height:6px;border-radius:3px;background:#EFD9AE"></div></div><div style="font-size:10px;font-weight:800;letter-spacing:.16em;color:#FFF3DC">BARRICADES</div></div>
+            <div style="font-family:Fredoka;font-weight:700;font-size:34px;line-height:1;color:#FFF8E6;text-shadow:0 2px 0 rgba(0,0,0,.3)">7</div>
+          </div>
+          <div style="background:rgba(59,36,18,.85);border-radius:999px;padding:8px 16px;display:flex;align-items:center;gap:8px;box-shadow:0 4px 10px rgba(0,0,0,.3)">
+            <div style="display:flex;flex-direction:column;gap:2px"><div style="width:16px;height:5px;border-radius:3px;background:#D9A566"></div><div style="width:16px;height:5px;border-radius:3px;background:#D9A566"></div></div>
+            <div style="font-family:Fredoka;font-weight:600;font-size:18px;color:#FFF8E6">× 7</div>
+          </div>
+          <div style="display:flex;gap:4px;align-items:center">
+            <div style="width:9px;height:26px;border-radius:5px;background:linear-gradient(#C68B4E,#9C6330);box-shadow:0 3px 0 #5A3418"></div>
+            <div style="width:9px;height:26px;border-radius:5px;background:linear-gradient(#C68B4E,#9C6330);box-shadow:0 3px 0 #5A3418"></div>
+            <div style="width:9px;height:26px;border-radius:5px;background:linear-gradient(#C68B4E,#9C6330);box-shadow:0 3px 0 #5A3418"></div>
+            <div style="width:9px;height:26px;border-radius:5px;background:linear-gradient(#C68B4E,#9C6330);box-shadow:0 3px 0 #5A3418"></div>
+            <div style="width:9px;height:26px;border-radius:5px;background:#C3B49B"></div>
+            <div style="width:9px;height:26px;border-radius:5px;background:#C3B49B"></div>
+            <div style="font-size:11px;font-weight:800;color:#8A6034;margin-left:6px">4 / 6 PIP ROW</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======== 7. HUD PARTS ======== -->
+  <div style="display:flex;flex-direction:column;gap:22px">
+    <div style="display:flex;align-items:baseline;gap:14px;border-bottom:2px solid rgba(217,165,102,.28);padding-bottom:12px">
+      <div style="font-family:Fredoka;font-size:13px;color:#D9A566;letter-spacing:.2em">07</div>
+      <div style="font-family:Fredoka;font-size:26px;color:#FBF3E2">HUD components</div>
+      <div style="margin-left:auto;font-size:13px;color:#B2946E">player cards · turn sign · placement panel · feedback</div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(290px,1fr));gap:18px">
+      <!-- player cards -->
+      <div style="display:flex;flex-direction:column;gap:14px">
+        <div style="font-size:11px;font-weight:800;letter-spacing:.18em;color:#B2946E">PLAYER CARD — idle / active / team</div>
+        <div style="display:flex;align-items:center;gap:12px;background:linear-gradient(#C68B4E,#A96C36);border-radius:16px;padding:12px 16px;box-shadow:inset 0 3px 0 rgba(255,255,255,.35),0 6px 0 #5A3418">
+          <div style="width:48px;height:48px;border-radius:50%;background:linear-gradient(#4A99E0,#2266B0);display:grid;place-items:center;box-shadow:inset 0 0 0 3px #EFD9AE"><div style="width:18px;height:18px;border-radius:50%;background:#FBF3E2"></div></div>
+          <div style="flex:1;min-width:0">
+            <div style="font-family:Fredoka;font-weight:600;font-size:17px;color:#FFF8E6;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">Sebastian</div>
+            <div style="font-size:11px;font-weight:800;letter-spacing:.1em;color:#F0D9B4">BLUE · WAITING</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:6px;background:rgba(59,36,18,.4);border-radius:999px;padding:5px 11px">
+            <div style="display:flex;flex-direction:column;gap:2px"><div style="width:13px;height:4px;border-radius:2px;background:#EFD9AE"></div><div style="width:13px;height:4px;border-radius:2px;background:#EFD9AE"></div></div>
+            <div style="font-family:Fredoka;font-weight:600;font-size:16px;color:#FFF8E6">7</div>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px;background:linear-gradient(#D89F5A,#B87B3F);border-radius:16px;padding:12px 16px;box-shadow:0 0 0 4px #FFD666,inset 0 3px 0 rgba(255,255,255,.4),0 6px 0 #5A3418">
+          <div style="width:48px;height:48px;border-radius:50%;background:linear-gradient(#E4635E,#C2352F);display:grid;place-items:center;box-shadow:inset 0 0 0 3px #FFF8E6"><div style="width:16px;height:16px;background:#FBF3E2;transform:rotate(45deg);border-radius:3px"></div></div>
+          <div style="flex:1;min-width:0">
+            <div style="font-family:Fredoka;font-weight:600;font-size:17px;color:#FFF8E6;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">Mika</div>
+            <div style="font-size:11px;font-weight:800;letter-spacing:.1em;color:#3B2412">▸ RED · PLAYING</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:6px;background:rgba(59,36,18,.4);border-radius:999px;padding:5px 11px">
+            <div style="display:flex;flex-direction:column;gap:2px"><div style="width:13px;height:4px;border-radius:2px;background:#EFD9AE"></div><div style="width:13px;height:4px;border-radius:2px;background:#EFD9AE"></div></div>
+            <div style="font-family:Fredoka;font-weight:600;font-size:16px;color:#FFF8E6">5</div>
+          </div>
+        </div>
+        <div style="background:linear-gradient(#C68B4E,#A96C36);border-radius:16px;padding:10px;box-shadow:inset 0 3px 0 rgba(255,255,255,.35),0 6px 0 #5A3418;display:flex;flex-direction:column;gap:8px">
+          <div style="font-size:10px;font-weight:800;letter-spacing:.16em;color:#FFF3DC;padding-left:4px">TEAM A · 2v2</div>
+          <div style="display:flex;gap:8px">
+            <div style="flex:1;display:flex;align-items:center;gap:8px;background:rgba(251,243,226,.9);border-radius:11px;padding:7px 9px"><div style="width:26px;height:26px;border-radius:50%;background:#2F7FD1;display:grid;place-items:center"><div style="width:10px;height:10px;border-radius:50%;background:#FBF3E2"></div></div><div style="font-weight:800;font-size:12px;color:#3B2412;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">Sebastian</div></div>
+            <div style="flex:1;display:flex;align-items:center;gap:8px;background:rgba(251,243,226,.9);border-radius:11px;padding:7px 9px"><div style="width:26px;height:26px;border-radius:50%;background:#2FA89B;display:grid;place-items:center"><div style="width:10px;height:10px;border-radius:50%;background:#FBF3E2"></div></div><div style="font-weight:800;font-size:12px;color:#3B2412;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">Ines</div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- turn sign + feedback -->
+      <div style="display:flex;flex-direction:column;gap:14px">
+        <div style="font-size:11px;font-weight:800;letter-spacing:.18em;color:#B2946E">TURN SIGN</div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:0;animation:swing 3.4s ease-in-out infinite;transform-origin:top center">
+          <div style="display:flex;gap:120px"><div style="width:5px;height:22px;background:repeating-linear-gradient(120deg,#C69A5E 0 4px,#8A6034 4px 8px)"></div><div style="width:5px;height:22px;background:repeating-linear-gradient(60deg,#C69A5E 0 4px,#8A6034 4px 8px)"></div></div>
+          <div style="background:repeating-linear-gradient(92deg, rgba(0,0,0,.05) 0 3px, rgba(0,0,0,0) 3px 10px), linear-gradient(#EFD9AE,#D9BE8E);border-radius:14px;padding:12px 30px;box-shadow:inset 0 3px 0 rgba(255,255,255,.6),inset 0 -6px 0 rgba(122,74,34,.18),0 6px 0 #A9803F,0 12px 18px rgba(0,0,0,.3)">
+            <div style="font-family:Fredoka;font-weight:700;font-size:24px;letter-spacing:.04em;color:#3B2412">YOUR TURN!</div>
+          </div>
+        </div>
+        <div style="display:flex;flex-wrap:wrap;gap:10px;justify-content:center">
+          <div style="background:linear-gradient(#D9A566,#B5763C);border-radius:12px;padding:9px 18px;box-shadow:inset 0 2px 0 rgba(255,255,255,.4),0 4px 0 #6E3F1B;display:flex;align-items:center;gap:8px"><div style="width:14px;height:14px;border-radius:50%;background:#E4635E;box-shadow:inset 0 0 0 2px #FFF8E6"></div><div style="font-family:Fredoka;font-weight:600;font-size:15px;color:#FFF8E6">MIKA'S TURN</div></div>
+          <div style="background:rgba(59,36,18,.8);border-radius:12px;padding:9px 18px;display:flex;align-items:center;gap:8px"><div style="font-family:Fredoka;font-weight:600;font-size:15px;color:#E2CBA6">WAITING FOR PLAYER...</div></div>
+          <div style="background:linear-gradient(#3FBBAD,#25897E);border-radius:12px;padding:9px 18px;box-shadow:inset 0 2px 0 rgba(255,255,255,.35),0 4px 0 #1A6660"><div style="font-family:Fredoka;font-weight:600;font-size:15px;color:#FFF8E6">TEAM A'S TURN</div></div>
+        </div>
+
+        <div style="font-size:11px;font-weight:800;letter-spacing:.18em;color:#B2946E;margin-top:6px">INVALID MOVE FEEDBACK</div>
+        <div style="display:flex;flex-wrap:wrap;gap:10px">
+          <div style="background:#FBF3E2;border-radius:12px;padding:10px 16px;display:flex;align-items:center;gap:10px;box-shadow:0 0 0 3px #C2352F,0 6px 12px rgba(0,0,0,.3)">
+            <svg width="18" height="18" viewBox="0 0 24 24" stroke="#C2352F" stroke-width="3.6" stroke-linecap="round"><line x1="6" y1="6" x2="18" y2="18" /><line x1="18" y1="6" x2="6" y2="18" /></svg>
+            <div style="font-weight:800;font-size:14px;color:#3B2412">Can't move here!</div>
+          </div>
+          <div style="background:#FBF3E2;border-radius:12px;padding:10px 16px;display:flex;align-items:center;gap:10px;box-shadow:0 0 0 3px #E87A2C,0 6px 12px rgba(0,0,0,.3)">
+            <div style="width:18px;height:18px;border-radius:4px;background:#E87A2C"></div>
+            <div style="font-weight:800;font-size:14px;color:#3B2412">Path blocked!</div>
+          </div>
+          <div style="transform:rotate(-7deg);border:3px dashed #C2352F;border-radius:10px;padding:8px 14px"><div style="font-family:Fredoka;font-weight:700;font-size:15px;color:#C2352F;letter-spacing:.06em">INVALID BARRICADE</div></div>
+        </div>
+      </div>
+
+      <!-- placement panel -->
+      <div style="display:flex;flex-direction:column;gap:14px">
+        <div style="font-size:11px;font-weight:800;letter-spacing:.18em;color:#B2946E">BARRICADE PLACEMENT PANEL</div>
+        <div style="background:repeating-linear-gradient(92deg, rgba(0,0,0,.05) 0 3px, rgba(0,0,0,0) 3px 11px), linear-gradient(#C68B4E,#A96C36);border-radius:18px;padding:18px;display:flex;flex-direction:column;gap:14px;box-shadow:inset 0 3px 0 rgba(255,255,255,.4),inset 0 -8px 0 rgba(0,0,0,.18),0 8px 0 #5A3418,0 14px 22px rgba(0,0,0,.35)">
+          <div style="font-family:Fredoka;font-weight:600;font-size:17px;letter-spacing:.05em;color:#FFF8E6;text-align:center">PLACE BARRICADE</div>
+          <div style="display:flex;gap:10px">
+            <div style="flex:1;background:linear-gradient(#EFD9AE,#D2B384);border-radius:12px;padding:12px;display:flex;flex-direction:column;align-items:center;gap:8px;box-shadow:0 0 0 4px #FFD666,inset 0 2px 0 rgba(255,255,255,.6),0 4px 0 #A9803F"><div style="width:42px;height:11px;border-radius:6px;background:#9C6330;box-shadow:inset 0 2px 0 rgba(255,255,255,.3)"></div><div style="font-size:10px;font-weight:800;color:#5A3418">HORIZONTAL</div></div>
+            <div style="flex:1;background:linear-gradient(#EFD9AE,#D2B384);border-radius:12px;padding:12px;display:flex;flex-direction:column;align-items:center;gap:8px;box-shadow:inset 0 2px 0 rgba(255,255,255,.6),0 4px 0 #A9803F"><div style="width:11px;height:42px;border-radius:6px;background:#9C6330;box-shadow:inset 2px 0 0 rgba(255,255,255,.3)"></div><div style="font-size:10px;font-weight:800;color:#5A3418">VERTICAL</div></div>
+          </div>
+          <div style="display:flex;align-items:center;justify-content:center;gap:8px;background:rgba(59,36,18,.35);border-radius:11px;padding:9px">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#FFF8E6" stroke-width="2.6" stroke-linecap="round"><path d="M20 12a8 8 0 1 1-2.6-5.9" /><polyline points="20,4 20,10 14,10" /></svg>
+            <div style="font-family:Fredoka;font-weight:600;font-size:14px;color:#FFF8E6">ROTATE · R</div>
+          </div>
+          <div style="display:flex;gap:10px">
+            <div style="flex:1;text-align:center;font-family:Fredoka;font-weight:600;font-size:15px;color:#5A3418;background:linear-gradient(#EFD9AE,#D2B384);padding:11px;border-radius:12px;box-shadow:inset 0 2px 0 rgba(255,255,255,.6),0 5px 0 #A9803F">CANCEL</div>
+            <div style="flex:1;text-align:center;font-family:Fredoka;font-weight:600;font-size:15px;color:#FFF8E6;background:linear-gradient(#5CC24A,#41972F);padding:11px;border-radius:12px;box-shadow:inset 0 2px 0 rgba(255,255,255,.45),0 5px 0 #2A6520">CONFIRM</div>
+          </div>
+        </div>
+
+        <div style="font-size:11px;font-weight:800;letter-spacing:.18em;color:#B2946E;margin-top:6px">NOTIFICATIONS &amp; TOOLTIP</div>
+        <div style="display:flex;flex-direction:column;gap:9px">
+          <div style="background:linear-gradient(#5CC24A,#41972F);border-radius:12px;padding:10px 16px;display:flex;align-items:center;gap:10px;box-shadow:inset 0 2px 0 rgba(255,255,255,.4),0 5px 0 #2A6520"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#FFF8E6" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="4,13 10,19 20,6" /></svg><div style="font-weight:800;font-size:14px;color:#FFF8E6">Match found!</div></div>
+          <div style="background:linear-gradient(#F0903F,#D2661F);border-radius:12px;padding:10px 16px;display:flex;align-items:center;gap:10px;box-shadow:inset 0 2px 0 rgba(255,255,255,.4),0 5px 0 #9E4A12"><div style="width:0;height:0;border-left:8px solid transparent;border-right:8px solid transparent;border-bottom:14px solid #FFF8E6"></div><div style="font-weight:800;font-size:14px;color:#FFF8E6">Invalid placement</div></div>
+          <div style="background:rgba(59,36,18,.85);border-radius:12px;padding:10px 16px;display:flex;align-items:center;gap:10px"><div style="width:14px;height:14px;border-radius:50%;background:#8C9AA8"></div><div style="font-weight:800;font-size:14px;color:#E2CBA6">Ines disconnected</div></div>
+          <div style="position:relative;background:#FBF3E2;border-radius:12px;padding:12px 15px;max-width:250px;box-shadow:0 0 0 2px rgba(122,74,34,.25),0 8px 16px rgba(0,0,0,.3)">
+            <div style="font-family:Fredoka;font-weight:600;font-size:15px;color:#3B2412;margin-bottom:3px">Barricade</div>
+            <div style="font-size:13px;line-height:1.45;color:#5A3418">Use this to block your opponent's path. You can never seal it completely.</div>
+            <div style="position:absolute;bottom:-9px;left:24px;width:0;height:0;border-left:10px solid transparent;border-right:10px solid transparent;border-top:10px solid #FBF3E2"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======== 8. ICONS ======== -->
+  <div style="display:flex;flex-direction:column;gap:22px">
+    <div style="display:flex;align-items:baseline;gap:14px;border-bottom:2px solid rgba(217,165,102,.28);padding-bottom:12px">
+      <div style="font-family:Fredoka;font-size:13px;color:#D9A566;letter-spacing:.2em">08</div>
+      <div style="font-family:Fredoka;font-size:26px;color:#FBF3E2">Icon set</div>
+      <div style="margin-left:auto;font-size:13px;color:#B2946E">2.6px round caps · 24px grid · carved into wood chips</div>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:12px">
+      <div style="display:flex;flex-direction:column;align-items:center;gap:8px"><div style="width:62px;height:62px;border-radius:16px;background:linear-gradient(#D9A566,#B5763C);display:grid;place-items:center;box-shadow:inset 0 3px 0 rgba(255,255,255,.4),0 5px 0 #6E3F1B"><div style="width:0;height:0;border-top:13px solid transparent;border-bottom:13px solid transparent;border-left:21px solid #FFF8E6;margin-left:5px"></div></div><div style="font-size:10px;font-weight:800;color:#B2946E">PLAY</div></div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:8px"><div style="width:62px;height:62px;border-radius:16px;background:linear-gradient(#D9A566,#B5763C);display:grid;place-items:center;box-shadow:inset 0 3px 0 rgba(255,255,255,.4),0 5px 0 #6E3F1B"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#FFF8E6" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="3,11 12,4 21,11" /><rect x="6" y="11" width="12" height="9" rx="1.5" /></svg></div><div style="font-size:10px;font-weight:800;color:#B2946E">HOME</div></div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:8px"><div style="width:62px;height:62px;border-radius:16px;background:linear-gradient(#D9A566,#B5763C);display:grid;place-items:center;box-shadow:inset 0 3px 0 rgba(255,255,255,.4),0 5px 0 #6E3F1B"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#FFF8E6" stroke-width="2.6" stroke-linecap="round"><circle cx="12" cy="12" r="3.4" /><circle cx="12" cy="12" r="8.4" stroke-dasharray="3.6 3.6" /></svg></div><div style="font-size:10px;font-weight:800;color:#B2946E">SETTINGS</div></div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:8px"><div style="width:62px;height:62px;border-radius:16px;background:linear-gradient(#D9A566,#B5763C);display:grid;place-items:center;box-shadow:inset 0 3px 0 rgba(255,255,255,.4),0 5px 0 #6E3F1B"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#FFF8E6" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><polygon points="4,9 8,9 13,5 13,19 8,15 4,15" /><path d="M17 9a4.5 4.5 0 0 1 0 6" /></svg></div><div style="font-size:10px;font-weight:800;color:#B2946E">SOUND</div></div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:8px"><div style="width:62px;height:62px;border-radius:16px;background:linear-gradient(#D9A566,#B5763C);display:grid;place-items:center;box-shadow:inset 0 3px 0 rgba(255,255,255,.4),0 5px 0 #6E3F1B"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#FFF8E6" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><polygon points="4,9 8,9 13,5 13,19 8,15 4,15" /><line x1="17" y1="9" x2="21" y2="15" /><line x1="21" y1="9" x2="17" y2="15" /></svg></div><div style="font-size:10px;font-weight:800;color:#B2946E">MUTE</div></div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:8px"><div style="width:62px;height:62px;border-radius:16px;background:linear-gradient(#D9A566,#B5763C);display:grid;place-items:center;box-shadow:inset 0 3px 0 rgba(255,255,255,.4),0 5px 0 #6E3F1B"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#FFF8E6" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="18" r="3" /><circle cx="19" cy="15.5" r="2.6" /><line x1="12" y1="18" x2="12" y2="6" /><line x1="21.6" y1="15.5" x2="21.6" y2="4" /><line x1="12" y1="6" x2="21.6" y2="4" /></svg></div><div style="font-size:10px;font-weight:800;color:#B2946E">MUSIC</div></div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:8px"><div style="width:62px;height:62px;border-radius:16px;background:linear-gradient(#D9A566,#B5763C);display:grid;place-items:center;box-shadow:inset 0 3px 0 rgba(255,255,255,.4),0 5px 0 #6E3F1B"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#FFF8E6" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="14,5 7,12 14,19" /></svg></div><div style="font-size:10px;font-weight:800;color:#B2946E">BACK</div></div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:8px"><div style="width:62px;height:62px;border-radius:16px;background:linear-gradient(#D9A566,#B5763C);display:grid;place-items:center;box-shadow:inset 0 3px 0 rgba(255,255,255,.4),0 5px 0 #6E3F1B"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#FFF8E6" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="10,5 17,12 10,19" /></svg></div><div style="font-size:10px;font-weight:800;color:#B2946E">NEXT</div></div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:8px"><div style="width:62px;height:62px;border-radius:16px;background:linear-gradient(#D9A566,#B5763C);display:grid;place-items:center;box-shadow:inset 0 3px 0 rgba(255,255,255,.4),0 5px 0 #6E3F1B"><svg width="26" height="26" viewBox="0 0 24 24" stroke="#FFF8E6" stroke-width="3.2" stroke-linecap="round"><line x1="6" y1="6" x2="18" y2="18" /><line x1="18" y1="6" x2="6" y2="18" /></svg></div><div style="font-size:10px;font-weight:800;color:#B2946E">CLOSE</div></div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:8px"><div style="width:62px;height:62px;border-radius:16px;background:linear-gradient(#D9A566,#B5763C);display:grid;place-items:center;box-shadow:inset 0 3px 0 rgba(255,255,255,.4),0 5px 0 #6E3F1B"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#FFF8E6" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="4,13 10,19 20,6" /></svg></div><div style="font-size:10px;font-weight:800;color:#B2946E">CHECK</div></div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:8px"><div style="width:62px;height:62px;border-radius:16px;background:linear-gradient(#D9A566,#B5763C);display:grid;place-items:center;box-shadow:inset 0 3px 0 rgba(255,255,255,.4),0 5px 0 #6E3F1B"><div style="display:flex;flex-direction:column;gap:4px"><div style="width:30px;height:8px;border-radius:4px;background:#FFF8E6"></div><div style="width:30px;height:8px;border-radius:4px;background:#FFF8E6"></div></div></div><div style="font-size:10px;font-weight:800;color:#B2946E">BARRICADE</div></div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:8px"><div style="width:62px;height:62px;border-radius:16px;background:linear-gradient(#D9A566,#B5763C);display:grid;place-items:center;box-shadow:inset 0 3px 0 rgba(255,255,255,.4),0 5px 0 #6E3F1B"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#FFF8E6" stroke-width="2.6" stroke-linecap="round"><circle cx="12" cy="8.5" r="3.6" /><path d="M5.5 20a6.5 6.5 0 0 1 13 0" /></svg></div><div style="font-size:10px;font-weight:800;color:#B2946E">PLAYER</div></div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:8px"><div style="width:62px;height:62px;border-radius:16px;background:linear-gradient(#D9A566,#B5763C);display:grid;place-items:center;box-shadow:inset 0 3px 0 rgba(255,255,255,.4),0 5px 0 #6E3F1B"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#FFF8E6" stroke-width="2.4" stroke-linecap="round"><circle cx="8.5" cy="9" r="3" /><circle cx="16" cy="9" r="3" /><path d="M3 19a5.5 5.5 0 0 1 11 0" /><path d="M13.5 19a5.5 5.5 0 0 1 7.5-5.1" /></svg></div><div style="font-size:10px;font-weight:800;color:#B2946E">TEAM</div></div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:8px"><div style="width:62px;height:62px;border-radius:16px;background:linear-gradient(#D9A566,#B5763C);display:grid;place-items:center;box-shadow:inset 0 3px 0 rgba(255,255,255,.4),0 5px 0 #6E3F1B"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#FFF8E6" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4h10v5a5 5 0 0 1-10 0z" /><path d="M7 5H4v2a3 3 0 0 0 3 3" /><path d="M17 5h3v2a3 3 0 0 1-3 3" /><line x1="12" y1="14" x2="12" y2="18" /><line x1="8" y1="20" x2="16" y2="20" /></svg></div><div style="font-size:10px;font-weight:800;color:#B2946E">TROPHY</div></div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:8px"><div style="width:62px;height:62px;border-radius:16px;background:linear-gradient(#D9A566,#B5763C);display:grid;place-items:center;box-shadow:inset 0 3px 0 rgba(255,255,255,.4),0 5px 0 #6E3F1B"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#FFF8E6" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><polygon points="3,7 8,12 12,5 16,12 21,7 19,18 5,18" /></svg></div><div style="font-size:10px;font-weight:800;color:#B2946E">CROWN</div></div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:8px"><div style="width:62px;height:62px;border-radius:16px;background:linear-gradient(#D9A566,#B5763C);display:grid;place-items:center;box-shadow:inset 0 3px 0 rgba(255,255,255,.4),0 5px 0 #6E3F1B"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#FFF8E6" stroke-width="2.6" stroke-linecap="round"><circle cx="12" cy="13" r="8" /><polyline points="12,8.5 12,13 15.5,15" /><line x1="9" y1="3" x2="15" y2="3" /></svg></div><div style="font-size:10px;font-weight:800;color:#B2946E">TIMER</div></div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:8px"><div style="width:62px;height:62px;border-radius:16px;background:linear-gradient(#D9A566,#B5763C);display:grid;place-items:center;box-shadow:inset 0 3px 0 rgba(255,255,255,.4),0 5px 0 #6E3F1B"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#FFF8E6" stroke-width="2.8" stroke-linecap="round"><path d="M9 9a3 3 0 1 1 4.2 2.8c-.8.4-1.2 1-1.2 2" /><line x1="12" y1="18" x2="12" y2="18" /></svg></div><div style="font-size:10px;font-weight:800;color:#B2946E">HELP</div></div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:8px"><div style="width:62px;height:62px;border-radius:16px;background:linear-gradient(#D9A566,#B5763C);display:grid;place-items:center;box-shadow:inset 0 3px 0 rgba(255,255,255,.4),0 5px 0 #6E3F1B"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#FFF8E6" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12a8 8 0 1 1-2.6-5.9" /><polyline points="20,4 20,10 14,10" /></svg></div><div style="font-size:10px;font-weight:800;color:#B2946E">ROTATE</div></div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:8px"><div style="width:62px;height:62px;border-radius:16px;background:linear-gradient(#D9A566,#B5763C);display:grid;place-items:center;box-shadow:inset 0 3px 0 rgba(255,255,255,.4),0 5px 0 #6E3F1B"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#FFF8E6" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="12" x2="20" y2="12" /><polyline points="7,9 4,12 7,15" /><polyline points="17,9 20,12 17,15" /></svg></div><div style="font-size:10px;font-weight:800;color:#B2946E">HORIZONTAL</div></div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:8px"><div style="width:62px;height:62px;border-radius:16px;background:linear-gradient(#D9A566,#B5763C);display:grid;place-items:center;box-shadow:inset 0 3px 0 rgba(255,255,255,.4),0 5px 0 #6E3F1B"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#FFF8E6" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="4" x2="12" y2="20" /><polyline points="9,7 12,4 15,7" /><polyline points="9,17 12,20 15,17" /></svg></div><div style="font-size:10px;font-weight:800;color:#B2946E">VERTICAL</div></div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:8px"><div style="width:62px;height:62px;border-radius:16px;background:linear-gradient(#D9A566,#B5763C);display:grid;place-items:center;box-shadow:inset 0 3px 0 rgba(255,255,255,.4),0 5px 0 #6E3F1B"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#FFF8E6" stroke-width="2.6" stroke-linecap="round"><rect x="5" y="11" width="14" height="9" rx="2" /><path d="M8.5 11V8a3.5 3.5 0 0 1 7 0v3" /></svg></div><div style="font-size:10px;font-weight:800;color:#B2946E">LOCK</div></div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:8px"><div style="width:62px;height:62px;border-radius:16px;background:linear-gradient(#D9A566,#B5763C);display:grid;place-items:center;box-shadow:inset 0 3px 0 rgba(255,255,255,.4),0 5px 0 #6E3F1B"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#FFF8E6" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h16l-1.4 12H5.4z" /><path d="M8.5 8V6a3.5 3.5 0 0 1 7 0v2" /></svg></div><div style="font-size:10px;font-weight:800;color:#B2946E">SHOP</div></div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:8px"><div style="width:62px;height:62px;border-radius:16px;background:linear-gradient(#D9A566,#B5763C);display:grid;place-items:center;box-shadow:inset 0 3px 0 rgba(255,255,255,.4),0 5px 0 #6E3F1B"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#FFF8E6" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="6" width="16" height="13" rx="2" /><line x1="4" y1="11" x2="20" y2="11" /><line x1="10" y1="15" x2="14" y2="15" /></svg></div><div style="font-size:10px;font-weight:800;color:#B2946E">INVENTORY</div></div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:8px"><div style="width:62px;height:62px;border-radius:16px;background:linear-gradient(#D9A566,#B5763C);display:grid;place-items:center;box-shadow:inset 0 3px 0 rgba(255,255,255,.4),0 5px 0 #6E3F1B"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#FFF8E6" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14 5h-8v14h8" /><line x1="11" y1="12" x2="21" y2="12" /><polyline points="18,9 21,12 18,15" /></svg></div><div style="font-size:10px;font-weight:800;color:#B2946E">LEAVE</div></div>
+    </div>
+  </div>
+
+  <!-- ======== 9. GAME MODE CARDS ======== -->
+  <div style="display:flex;flex-direction:column;gap:22px">
+    <div style="display:flex;align-items:baseline;gap:14px;border-bottom:2px solid rgba(217,165,102,.28);padding-bottom:12px">
+      <div style="font-family:Fredoka;font-size:13px;color:#D9A566;letter-spacing:.2em">09</div>
+      <div style="font-family:Fredoka;font-size:26px;color:#FBF3E2">Game mode cards</div>
+      <div style="margin-left:auto;font-size:13px;color:#B2946E">wooden frame · painted interior · mode diagram</div>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(215px,1fr));gap:18px">
+      <div style="background:linear-gradient(#C68B4E,#A96C36);border-radius:20px;padding:9px;box-shadow:inset 0 3px 0 rgba(255,255,255,.4),0 8px 0 #5A3418,0 14px 22px rgba(0,0,0,.3);cursor:pointer;transition:transform .1s ease" style-hover="transform:translateY(-3px)">
+        <div style="background:linear-gradient(#4A99E0,#2266B0);border-radius:14px;padding:20px 16px;display:flex;flex-direction:column;align-items:center;gap:12px;box-shadow:inset 0 3px 0 rgba(255,255,255,.35),inset 0 -5px 0 rgba(0,0,0,.2)">
+          <div style="display:flex;gap:9px;align-items:center;height:34px">
+            <div style="width:24px;height:24px;border-radius:50%;background:#FBF3E2"></div>
+            <div style="width:4px;height:20px;border-radius:2px;background:rgba(251,243,226,.5)"></div>
+            <div style="width:24px;height:24px;background:#FBF3E2;transform:rotate(45deg);border-radius:3px"></div>
+          </div>
+          <div style="font-family:Fredoka;font-weight:700;font-size:30px;line-height:1;color:#FFF8E6;text-shadow:0 2px 0 rgba(0,0,0,.28)">1v1</div>
+          <div style="font-family:Fredoka;font-weight:600;font-size:15px;letter-spacing:.08em;color:#FFF8E6">CLASSIC DUEL</div>
+          <div style="font-size:11px;font-weight:800;letter-spacing:.14em;color:#CFE4F7">2 PLAYERS · 10 BARRICADES</div>
+          <div style="font-size:12px;line-height:1.4;text-align:center;color:#EAF3FB">Race across the board. Ten walls each.</div>
+        </div>
+      </div>
+      <div style="background:linear-gradient(#C68B4E,#A96C36);border-radius:20px;padding:9px;box-shadow:inset 0 3px 0 rgba(255,255,255,.4),0 8px 0 #5A3418,0 14px 22px rgba(0,0,0,.3);cursor:pointer;transition:transform .1s ease" style-hover="transform:translateY(-3px)">
+        <div style="background:linear-gradient(#F0903F,#D2661F);border-radius:14px;padding:20px 16px;display:flex;flex-direction:column;align-items:center;gap:12px;box-shadow:inset 0 3px 0 rgba(255,255,255,.35),inset 0 -5px 0 rgba(0,0,0,.2)">
+          <div style="display:flex;gap:8px;align-items:center;height:34px">
+            <div style="width:22px;height:22px;border-radius:50%;background:#FBF3E2"></div>
+            <div style="width:22px;height:22px;background:#FBF3E2;transform:rotate(45deg);border-radius:3px"></div>
+            <div style="width:20px;height:20px;background:#FBF3E2;border-radius:4px"></div>
+          </div>
+          <div style="font-family:Fredoka;font-weight:700;font-size:30px;line-height:1;color:#FFF8E6;text-shadow:0 2px 0 rgba(0,0,0,.28)">1v1v1</div>
+          <div style="font-family:Fredoka;font-weight:600;font-size:15px;letter-spacing:.08em;color:#FFF8E6">FREE-FOR-ALL</div>
+          <div style="font-size:11px;font-weight:800;letter-spacing:.14em;color:#FBE3CC">3 PLAYERS · 7 BARRICADES</div>
+          <div style="font-size:12px;line-height:1.4;text-align:center;color:#FDF0E5">Three goals, three rivals, fewer walls.</div>
+        </div>
+      </div>
+      <div style="background:linear-gradient(#C68B4E,#A96C36);border-radius:20px;padding:9px;box-shadow:inset 0 3px 0 rgba(255,255,255,.4),0 8px 0 #5A3418,0 14px 22px rgba(0,0,0,.3);cursor:pointer;transition:transform .1s ease" style-hover="transform:translateY(-3px)">
+        <div style="background:linear-gradient(#9E73D4,#7A4CB4);border-radius:14px;padding:20px 16px;display:flex;flex-direction:column;align-items:center;gap:12px;box-shadow:inset 0 3px 0 rgba(255,255,255,.35),inset 0 -5px 0 rgba(0,0,0,.2)">
+          <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:6px;height:34px;align-content:center">
+            <div style="width:15px;height:15px;border-radius:50%;background:#FBF3E2"></div>
+            <div style="width:14px;height:14px;background:#FBF3E2;transform:rotate(45deg);border-radius:2px"></div>
+            <div style="width:14px;height:14px;background:#FBF3E2;border-radius:3px"></div>
+            <div style="width:0;height:0;border-left:8px solid transparent;border-right:8px solid transparent;border-bottom:14px solid #FBF3E2"></div>
+          </div>
+          <div style="font-family:Fredoka;font-weight:700;font-size:26px;line-height:1;color:#FFF8E6;text-shadow:0 2px 0 rgba(0,0,0,.28)">1v1v1v1</div>
+          <div style="font-family:Fredoka;font-weight:600;font-size:15px;letter-spacing:.08em;color:#FFF8E6">FULL TABLE</div>
+          <div style="font-size:11px;font-weight:800;letter-spacing:.14em;color:#E5D6F5">4 PLAYERS · 5 BARRICADES</div>
+          <div style="font-size:12px;line-height:1.4;text-align:center;color:#F3EBFB">Every side of the board is in play.</div>
+        </div>
+      </div>
+      <div style="background:linear-gradient(#C68B4E,#A96C36);border-radius:20px;padding:9px;box-shadow:inset 0 3px 0 rgba(255,255,255,.4),0 8px 0 #5A3418,0 14px 22px rgba(0,0,0,.3);cursor:pointer;transition:transform .1s ease" style-hover="transform:translateY(-3px)">
+        <div style="background:linear-gradient(#3FBBAD,#25897E);border-radius:14px;padding:20px 16px;display:flex;flex-direction:column;align-items:center;gap:12px;box-shadow:inset 0 3px 0 rgba(255,255,255,.35),inset 0 -5px 0 rgba(0,0,0,.2)">
+          <div style="display:flex;gap:14px;align-items:center;height:34px">
+            <div style="display:flex;gap:3px"><div style="width:20px;height:20px;border-radius:50%;background:#FBF3E2"></div><div style="width:20px;height:20px;border-radius:50%;background:rgba(251,243,226,.6)"></div></div>
+            <div style="display:flex;gap:3px"><div style="width:18px;height:18px;background:#FBF3E2;border-radius:3px"></div><div style="width:18px;height:18px;background:rgba(251,243,226,.6);border-radius:3px"></div></div>
+          </div>
+          <div style="font-family:Fredoka;font-weight:700;font-size:30px;line-height:1;color:#FFF8E6;text-shadow:0 2px 0 rgba(0,0,0,.28)">2v2</div>
+          <div style="font-family:Fredoka;font-weight:600;font-size:15px;letter-spacing:.08em;color:#FFF8E6">TEAM BATTLE</div>
+          <div style="font-size:11px;font-weight:800;letter-spacing:.14em;color:#CFEDE9">4 PLAYERS · SHARED WALLS</div>
+          <div style="font-size:12px;line-height:1.4;text-align:center;color:#E8F7F5">Two teams share one barricade pool.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======== 10. MAIN MENU ======== -->
+  <div style="display:flex;flex-direction:column;gap:22px">
+    <div style="display:flex;align-items:baseline;gap:14px;border-bottom:2px solid rgba(217,165,102,.28);padding-bottom:12px">
+      <div style="font-family:Fredoka;font-size:13px;color:#D9A566;letter-spacing:.2em">10</div>
+      <div style="font-family:Fredoka;font-size:26px;color:#FBF3E2">Main menu</div>
+      <div style="margin-left:auto;font-size:13px;color:#B2946E">16:9 · board visible behind the stack</div>
+    </div>
+    <div style="container-type:inline-size;width:100%;aspect-ratio:16/9;border-radius:18px;overflow:hidden;position:relative;background:radial-gradient(120% 100% at 50% -10%, #6A4423, #2E1B0D 75%);box-shadow:0 16px 34px rgba(0,0,0,.45)">
+      <div style="position:absolute;inset:0;background:repeating-linear-gradient(45deg, rgba(0,0,0,.06) 0 6px, rgba(0,0,0,0) 6px 12px), linear-gradient(#2FA89B,#1C7A70);opacity:.5"></div>
+      <div style="position:absolute;left:50%;top:56%;transform:translate(-50%,-50%) rotate(-2deg);width:52cqw;aspect-ratio:1;border-radius:2.5cqw;background:linear-gradient(#EFD9AE,#D2B384);box-shadow:inset 0 0 0 1.6cqw #B5763C,inset 0 0 0 2.1cqw #7A4A22,0 3cqw 5cqw rgba(0,0,0,.5);opacity:.85">
+        <div style="position:absolute;inset:2.3cqw;display:grid;grid-template-columns:repeat(9,1fr);grid-template-rows:repeat(9,1fr)">
+          <sc-for list="{{ cells }}" as="c" hint-placeholder-count="81">
+            <div style="box-shadow:inset -1px -1px 0 rgba(122,74,34,.28)"></div>
+          </sc-for>
+        </div>
+      </div>
+      <div style="position:absolute;left:6cqw;bottom:5cqw;width:9cqw;height:1.7cqw;border-radius:1cqw;background:linear-gradient(#C68B4E,#9C6330);box-shadow:0 .5cqw 0 #5A3418;transform:rotate(-6deg)"></div>
+      <div style="position:absolute;left:8cqw;bottom:8.5cqw;width:9cqw;height:1.7cqw;border-radius:1cqw;background:linear-gradient(#C68B4E,#9C6330);box-shadow:0 .5cqw 0 #5A3418;transform:rotate(4deg)"></div>
+      <div style="position:absolute;right:7cqw;bottom:6cqw;width:5cqw;height:5cqw;border-radius:50%;background:linear-gradient(#4A99E0,#2266B0);box-shadow:inset 0 .4cqw 0 rgba(255,255,255,.4),0 .7cqw 0 #16456F;display:grid;place-items:center"><div style="width:1.8cqw;height:1.8cqw;border-radius:50%;background:#FBF3E2"></div></div>
+      <div style="position:absolute;right:12cqw;bottom:4cqw;width:4cqw;height:4cqw;border-radius:50%;background:linear-gradient(#E4635E,#C2352F);box-shadow:inset 0 .3cqw 0 rgba(255,255,255,.35),0 .6cqw 0 #8C1F1A;display:grid;place-items:center"><div style="width:1.3cqw;height:1.3cqw;background:#FBF3E2;transform:rotate(45deg);border-radius:.2cqw"></div></div>
+      <div style="position:absolute;inset:0;background:linear-gradient(90deg, rgba(20,10,4,.55), rgba(20,10,4,.1) 45%, rgba(20,10,4,.45))"></div>
+
+      <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2.2cqw;padding:3cqw">
+        <div style="display:flex;align-items:center;gap:1.2cqw">
+          <div style="width:1.5cqw;height:5cqw;border-radius:.7cqw;background:linear-gradient(#D9A566,#A96C36);box-shadow:inset 0 .3cqw 0 rgba(255,255,255,.4),0 .55cqw 0 #5A3418"></div>
+          <div style="font-family:Fredoka;font-weight:700;font-size:7cqw;line-height:.9;color:#F7E3BE;text-shadow:0 .25cqw 0 #B5763C,0 .5cqw 0 #7A4A22,0 .8cqw 0 #5A3418,0 1.2cqw 1.8cqw rgba(0,0,0,.55)">BARRICADE</div>
+          <div style="width:1.5cqw;height:5cqw;border-radius:.7cqw;background:linear-gradient(#D9A566,#A96C36);box-shadow:inset 0 .3cqw 0 rgba(255,255,255,.4),0 .55cqw 0 #5A3418"></div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:1.1cqw;align-items:center;width:26cqw">
+          <div style="width:100%;text-align:center;font-family:Fredoka;font-weight:600;font-size:2.1cqw;letter-spacing:.06em;color:#FFF8E6;background:linear-gradient(#5CC24A,#41972F);padding:1.3cqw;border-radius:1.4cqw;box-shadow:inset 0 .3cqw 0 rgba(255,255,255,.45),0 .7cqw 0 #2A6520,0 1.2cqw 1.6cqw rgba(0,0,0,.3);text-shadow:0 .15cqw 0 rgba(0,0,0,.25)">PLAY 1v1</div>
+          <div style="display:flex;gap:1cqw;width:100%">
+            <div style="flex:1;text-align:center;font-family:Fredoka;font-weight:600;font-size:1.5cqw;letter-spacing:.05em;color:#FFF8E6;background:linear-gradient(#D9A566,#B5763C);padding:1cqw;border-radius:1.1cqw;box-shadow:inset 0 .25cqw 0 rgba(255,255,255,.4),0 .55cqw 0 #6E3F1B">1v1v1</div>
+            <div style="flex:1;text-align:center;font-family:Fredoka;font-weight:600;font-size:1.5cqw;letter-spacing:.05em;color:#FFF8E6;background:linear-gradient(#D9A566,#B5763C);padding:1cqw;border-radius:1.1cqw;box-shadow:inset 0 .25cqw 0 rgba(255,255,255,.4),0 .55cqw 0 #6E3F1B">1v1v1v1</div>
+          </div>
+          <div style="width:100%;text-align:center;font-family:Fredoka;font-weight:600;font-size:1.7cqw;letter-spacing:.05em;color:#FFF8E6;background:linear-gradient(#3FBBAD,#25897E);padding:1.1cqw;border-radius:1.2cqw;box-shadow:inset 0 .25cqw 0 rgba(255,255,255,.4),0 .6cqw 0 #1A6660">PLAY 2v2</div>
+          <div style="width:100%;height:.2cqw;background:rgba(251,243,226,.18);border-radius:1cqw;margin:.4cqw 0"></div>
+          <div style="width:100%;text-align:center;font-family:Fredoka;font-weight:600;font-size:1.4cqw;letter-spacing:.05em;color:#5A3418;background:linear-gradient(#EFD9AE,#D2B384);padding:.9cqw;border-radius:1.1cqw;box-shadow:inset 0 .25cqw 0 rgba(255,255,255,.6),0 .5cqw 0 #A9803F">HOW TO PLAY</div>
+        </div>
+      </div>
+      <div style="position:absolute;top:2.2cqw;right:2.2cqw;display:flex;gap:1cqw">
+        <div style="width:4cqw;height:4cqw;border-radius:1.1cqw;background:linear-gradient(#9E73D4,#7A4CB4);display:grid;place-items:center;box-shadow:inset 0 .25cqw 0 rgba(255,255,255,.4),0 .5cqw 0 #5C3490"><svg width="52%" height="52%" viewBox="0 0 24 24" fill="none" stroke="#FFF8E6" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h16l-1.4 12H5.4z" /><path d="M8.5 8V6a3.5 3.5 0 0 1 7 0v2" /></svg></div>
+        <div style="width:4cqw;height:4cqw;border-radius:1.1cqw;background:linear-gradient(#D9A566,#B5763C);display:grid;place-items:center;box-shadow:inset 0 .25cqw 0 rgba(255,255,255,.4),0 .5cqw 0 #6E3F1B"><svg width="52%" height="52%" viewBox="0 0 24 24" fill="none" stroke="#FFF8E6" stroke-width="2.6" stroke-linecap="round"><circle cx="12" cy="12" r="3.4" /><circle cx="12" cy="12" r="8.4" stroke-dasharray="3.6 3.6" /></svg></div>
+      </div>
+      <div style="position:absolute;bottom:2cqw;left:50%;transform:translateX(-50%);font-size:1.1cqw;font-weight:800;letter-spacing:.2em;color:rgba(251,243,226,.45)">4,812 PLAYING NOW</div>
+    </div>
+  </div>
+
+  <!-- ======== 11. IN-GAME HUD ======== -->
+  <div style="display:flex;flex-direction:column;gap:22px">
+    <div style="display:flex;align-items:baseline;gap:14px;border-bottom:2px solid rgba(217,165,102,.28);padding-bottom:12px">
+      <div style="font-family:Fredoka;font-size:13px;color:#D9A566;letter-spacing:.2em">11</div>
+      <div style="font-family:Fredoka;font-size:26px;color:#FBF3E2">In-game board &amp; HUD</div>
+      <div style="margin-left:auto;font-size:13px;color:#B2946E">desktop 16:9 · player info flanks the board, never overlaps</div>
+    </div>
+    <div style="container-type:inline-size;width:100%;aspect-ratio:16/9;border-radius:18px;overflow:hidden;position:relative;background:radial-gradient(120% 110% at 50% -20%, #5E3C1E, #2A1A0E 80%);box-shadow:0 16px 34px rgba(0,0,0,.45)">
+      <div style="position:absolute;inset:0;background:repeating-linear-gradient(45deg, rgba(0,0,0,.05) 0 6px, rgba(0,0,0,0) 6px 12px), linear-gradient(#2FA89B,#1C7A70);opacity:.35"></div>
+
+      <!-- turn sign -->
+      <div style="position:absolute;top:0;left:50%;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center">
+        <div style="display:flex;gap:11cqw"><div style="width:.4cqw;height:2cqw;background:repeating-linear-gradient(120deg,#C69A5E 0 .3cqw,#8A6034 .3cqw .6cqw)"></div><div style="width:.4cqw;height:2cqw;background:repeating-linear-gradient(60deg,#C69A5E 0 .3cqw,#8A6034 .3cqw .6cqw)"></div></div>
+        <div style="background:linear-gradient(#EFD9AE,#D9BE8E);border-radius:1.1cqw;padding:.8cqw 2.6cqw;box-shadow:inset 0 .25cqw 0 rgba(255,255,255,.6),0 .5cqw 0 #A9803F,0 1cqw 1.6cqw rgba(0,0,0,.35)"><div style="font-family:Fredoka;font-weight:700;font-size:2cqw;letter-spacing:.04em;color:#3B2412">YOUR TURN!</div></div>
+      </div>
+
+      <!-- left player -->
+      <div style="position:absolute;left:2.2cqw;top:50%;transform:translateY(-50%);width:20cqw;display:flex;flex-direction:column;gap:1cqw">
+        <div style="display:flex;align-items:center;gap:1cqw;background:linear-gradient(#D89F5A,#B87B3F);border-radius:1.3cqw;padding:1cqw 1.2cqw;box-shadow:0 0 0 .3cqw #FFD666,inset 0 .25cqw 0 rgba(255,255,255,.4),0 .55cqw 0 #5A3418">
+          <div style="width:4cqw;height:4cqw;border-radius:50%;background:linear-gradient(#4A99E0,#2266B0);display:grid;place-items:center;box-shadow:inset 0 0 0 .25cqw #EFD9AE"><div style="width:1.5cqw;height:1.5cqw;border-radius:50%;background:#FBF3E2"></div></div>
+          <div style="flex:1;min-width:0">
+            <div style="font-family:Fredoka;font-weight:600;font-size:1.5cqw;color:#FFF8E6;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">Sebastian</div>
+            <div style="font-size:.95cqw;font-weight:800;letter-spacing:.12em;color:#3B2412">▸ BLUE · YOU</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:.5cqw;background:rgba(59,36,18,.42);border-radius:99cqw;padding:.4cqw .9cqw"><div style="display:flex;flex-direction:column;gap:.15cqw"><div style="width:1.1cqw;height:.32cqw;border-radius:.2cqw;background:#EFD9AE"></div><div style="width:1.1cqw;height:.32cqw;border-radius:.2cqw;background:#EFD9AE"></div></div><div style="font-family:Fredoka;font-weight:600;font-size:1.4cqw;color:#FFF8E6">7</div></div>
+        </div>
+        <div style="background:linear-gradient(#C68B4E,#A96C36);border-radius:1.3cqw;padding:1.1cqw;display:flex;flex-direction:column;gap:.8cqw;box-shadow:inset 0 .25cqw 0 rgba(255,255,255,.35),0 .55cqw 0 #5A3418">
+          <div style="font-size:.9cqw;font-weight:800;letter-spacing:.16em;color:#FFF3DC">YOUR BARRICADES</div>
+          <div style="display:flex;gap:.35cqw">
+            <div style="width:.8cqw;height:2.4cqw;border-radius:.4cqw;background:linear-gradient(#C68B4E,#9C6330);box-shadow:0 .25cqw 0 #5A3418"></div>
+            <div style="width:.8cqw;height:2.4cqw;border-radius:.4cqw;background:linear-gradient(#C68B4E,#9C6330);box-shadow:0 .25cqw 0 #5A3418"></div>
+            <div style="width:.8cqw;height:2.4cqw;border-radius:.4cqw;background:linear-gradient(#C68B4E,#9C6330);box-shadow:0 .25cqw 0 #5A3418"></div>
+            <div style="width:.8cqw;height:2.4cqw;border-radius:.4cqw;background:linear-gradient(#C68B4E,#9C6330);box-shadow:0 .25cqw 0 #5A3418"></div>
+            <div style="width:.8cqw;height:2.4cqw;border-radius:.4cqw;background:linear-gradient(#C68B4E,#9C6330);box-shadow:0 .25cqw 0 #5A3418"></div>
+            <div style="width:.8cqw;height:2.4cqw;border-radius:.4cqw;background:linear-gradient(#C68B4E,#9C6330);box-shadow:0 .25cqw 0 #5A3418"></div>
+            <div style="width:.8cqw;height:2.4cqw;border-radius:.4cqw;background:linear-gradient(#C68B4E,#9C6330);box-shadow:0 .25cqw 0 #5A3418"></div>
+            <div style="width:.8cqw;height:2.4cqw;border-radius:.4cqw;background:rgba(59,36,18,.35)"></div>
+            <div style="width:.8cqw;height:2.4cqw;border-radius:.4cqw;background:rgba(59,36,18,.35)"></div>
+            <div style="width:.8cqw;height:2.4cqw;border-radius:.4cqw;background:rgba(59,36,18,.35)"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- board -->
+      <div style="position:absolute;left:50%;top:52%;transform:translate(-50%,-50%);width:38cqw;aspect-ratio:1;border-radius:2cqw;background:linear-gradient(#EFD9AE,#D2B384);box-shadow:inset 0 0 0 1.4cqw #B5763C,inset 0 0 0 1.9cqw #7A4A22,0 2cqw 4cqw rgba(0,0,0,.5)">
+        <div style="position:absolute;inset:2.1cqw;border-radius:.4cqw;overflow:hidden">
+          <div style="position:absolute;inset:0;display:grid;grid-template-columns:repeat(9,1fr);grid-template-rows:repeat(9,1fr);background:repeating-linear-gradient(91deg, rgba(122,74,34,.05) 0 2px, rgba(0,0,0,0) 2px 9px), linear-gradient(#F0DCB4,#DCC091)">
+            <sc-for list="{{ cells }}" as="c" hint-placeholder-count="81">
+              <div style="box-shadow:inset -1px -1px 0 rgba(122,74,34,.3)"></div>
+            </sc-for>
+          </div>
+          <!-- goal rows -->
+          <div style="position:absolute;top:0;left:0;right:0;height:11.11%;background:linear-gradient(rgba(217,68,63,.22),rgba(217,68,63,.05));box-shadow:inset 0 .3cqw 0 rgba(217,68,63,.5)"></div>
+          <div style="position:absolute;bottom:0;left:0;right:0;height:11.11%;background:linear-gradient(rgba(47,127,209,.05),rgba(47,127,209,.22));box-shadow:inset 0 -.3cqw 0 rgba(47,127,209,.5)"></div>
+          <div style="position:absolute;inset:0;background:radial-gradient(90% 70% at 25% 10%, rgba(255,255,255,.35), rgba(0,0,0,0) 60%), radial-gradient(70% 60% at 85% 95%, rgba(90,52,24,.22), rgba(0,0,0,0) 70%);pointer-events:none"></div>
+
+          <!-- selectable moves -->
+          <div style="position:absolute;left:44.44%;top:66.66%;width:11.11%;height:11.11%;display:grid;place-items:center"><div style="width:42%;height:42%;border-radius:50%;background:#FFD666;box-shadow:0 0 0 .25cqw rgba(90,52,24,.35)"></div></div>
+          <div style="position:absolute;left:33.33%;top:77.77%;width:11.11%;height:11.11%;display:grid;place-items:center"><div style="width:42%;height:42%;border-radius:50%;background:#FFD666;box-shadow:0 0 0 .25cqw rgba(90,52,24,.35)"></div></div>
+          <div style="position:absolute;left:55.55%;top:77.77%;width:11.11%;height:11.11%;display:grid;place-items:center"><div style="width:42%;height:42%;border-radius:50%;background:#FFD666;box-shadow:0 0 0 .25cqw rgba(90,52,24,.35)"></div></div>
+          <!-- hovered target cell -->
+          <div style="position:absolute;left:44.44%;top:66.66%;width:11.11%;height:11.11%;box-shadow:inset 0 0 0 .3cqw #FFD666;border-radius:.3cqw"></div>
+
+          <!-- placed barricades -->
+          <div style="position:absolute;left:22.22%;top:32.6%;width:22.22%;height:1.5cqw;border-radius:.75cqw;background:linear-gradient(#C68B4E,#9C6330);box-shadow:inset 0 .2cqw 0 rgba(255,255,255,.4),0 .35cqw 0 #5A3418,0 .6cqw .8cqw rgba(0,0,0,.35)"></div>
+          <div style="position:absolute;left:65.9%;top:44.44%;width:1.5cqw;height:22.22%;border-radius:.75cqw;background:linear-gradient(90deg,#C68B4E,#9C6330);box-shadow:inset .2cqw 0 0 rgba(255,255,255,.35),0 .35cqw 0 #5A3418,0 .6cqw .8cqw rgba(0,0,0,.35)"></div>
+          <div style="position:absolute;left:11.11%;top:55.2%;width:22.22%;height:1.5cqw;border-radius:.75cqw;background:linear-gradient(#C68B4E,#9C6330);box-shadow:inset 0 .2cqw 0 rgba(255,255,255,.4),0 .35cqw 0 #5A3418,0 .6cqw .8cqw rgba(0,0,0,.35)"></div>
+          <!-- placement preview -->
+          <div style="position:absolute;left:44.44%;top:21.5%;width:22.22%;height:1.5cqw;border-radius:.75cqw;background:linear-gradient(#5CC24A,#41972F);opacity:.85;box-shadow:0 0 0 .2cqw #FFF8E6"></div>
+
+          <!-- tokens -->
+          <div style="position:absolute;left:44.44%;top:77.77%;width:11.11%;height:11.11%;display:grid;place-items:center"><div style="width:78%;height:78%;border-radius:50%;background:linear-gradient(#D9A566,#A96C36);padding:6%;box-shadow:0 .4cqw 0 #5A3418,0 .7cqw 1cqw rgba(0,0,0,.4);animation:bob 1.6s ease-in-out infinite"><div style="width:100%;height:100%;border-radius:50%;background:linear-gradient(#4A99E0,#2266B0);display:grid;place-items:center;box-shadow:inset 0 .2cqw 0 rgba(255,255,255,.45)"><div style="width:34%;height:34%;border-radius:50%;background:#FBF3E2"></div></div></div></div>
+          <div style="position:absolute;left:44.44%;top:0;width:11.11%;height:11.11%;display:grid;place-items:center"><div style="width:78%;height:78%;border-radius:50%;background:linear-gradient(#D9A566,#A96C36);padding:6%;box-shadow:0 .4cqw 0 #5A3418,0 .7cqw 1cqw rgba(0,0,0,.4)"><div style="width:100%;height:100%;border-radius:50%;background:linear-gradient(#E4635E,#C2352F);display:grid;place-items:center;box-shadow:inset 0 .2cqw 0 rgba(255,255,255,.4)"><div style="width:30%;height:30%;background:#FBF3E2;transform:rotate(45deg);border-radius:.15cqw"></div></div></div></div>
+        </div>
+      </div>
+
+      <!-- right player -->
+      <div style="position:absolute;right:2.2cqw;top:50%;transform:translateY(-50%);width:20cqw;display:flex;flex-direction:column;gap:1cqw">
+        <div style="display:flex;align-items:center;gap:1cqw;background:linear-gradient(#C68B4E,#A96C36);border-radius:1.3cqw;padding:1cqw 1.2cqw;box-shadow:inset 0 .25cqw 0 rgba(255,255,255,.35),0 .55cqw 0 #5A3418">
+          <div style="width:4cqw;height:4cqw;border-radius:50%;background:linear-gradient(#E4635E,#C2352F);display:grid;place-items:center;box-shadow:inset 0 0 0 .25cqw #EFD9AE"><div style="width:1.3cqw;height:1.3cqw;background:#FBF3E2;transform:rotate(45deg);border-radius:.2cqw"></div></div>
+          <div style="flex:1;min-width:0">
+            <div style="font-family:Fredoka;font-weight:600;font-size:1.5cqw;color:#FFF8E6;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">Mika</div>
+            <div style="font-size:.95cqw;font-weight:800;letter-spacing:.12em;color:#F0D9B4">RED · WAITING</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:.5cqw;background:rgba(59,36,18,.42);border-radius:99cqw;padding:.4cqw .9cqw"><div style="display:flex;flex-direction:column;gap:.15cqw"><div style="width:1.1cqw;height:.32cqw;border-radius:.2cqw;background:#EFD9AE"></div><div style="width:1.1cqw;height:.32cqw;border-radius:.2cqw;background:#EFD9AE"></div></div><div style="font-family:Fredoka;font-weight:600;font-size:1.4cqw;color:#FFF8E6">5</div></div>
+        </div>
+        <div style="background:linear-gradient(#C68B4E,#A96C36);border-radius:1.3cqw;padding:1.1cqw;display:flex;flex-direction:column;gap:.7cqw;box-shadow:inset 0 .25cqw 0 rgba(255,255,255,.35),0 .55cqw 0 #5A3418">
+          <div style="font-size:.9cqw;font-weight:800;letter-spacing:.16em;color:#FFF3DC">MOVE TIMER</div>
+          <div style="height:1.1cqw;border-radius:99cqw;background:rgba(59,36,18,.4);overflow:hidden"><div style="width:62%;height:100%;border-radius:99cqw;background:linear-gradient(#FFE08A,#E8B32B)"></div></div>
+          <div style="font-size:.9cqw;font-weight:800;color:#FFF3DC">0:18 REMAINING</div>
+        </div>
+      </div>
+
+      <!-- action bar -->
+      <div style="position:absolute;bottom:2cqw;left:50%;transform:translateX(-50%);display:flex;gap:1cqw;align-items:center">
+        <div style="font-family:Fredoka;font-weight:600;font-size:1.5cqw;letter-spacing:.05em;color:#FFF8E6;background:linear-gradient(#5CC24A,#41972F);padding:1cqw 2.2cqw;border-radius:1.2cqw;box-shadow:inset 0 .25cqw 0 rgba(255,255,255,.45),0 .6cqw 0 #2A6520,0 1cqw 1.4cqw rgba(0,0,0,.3)">MOVE</div>
+        <div style="display:flex;align-items:center;gap:.7cqw;font-family:Fredoka;font-weight:600;font-size:1.5cqw;letter-spacing:.05em;color:#FFF8E6;background:linear-gradient(#D9A566,#B5763C);padding:1cqw 2.2cqw;border-radius:1.2cqw;box-shadow:inset 0 .25cqw 0 rgba(255,255,255,.4),0 .6cqw 0 #6E3F1B,0 1cqw 1.4cqw rgba(0,0,0,.3)"><div style="display:flex;flex-direction:column;gap:.2cqw"><div style="width:1.5cqw;height:.4cqw;border-radius:.25cqw;background:#FFF8E6"></div><div style="width:1.5cqw;height:.4cqw;border-radius:.25cqw;background:#FFF8E6"></div></div>PLACE BARRICADE</div>
+        <div style="width:4cqw;height:4cqw;border-radius:1.2cqw;background:linear-gradient(#EFD9AE,#D2B384);display:grid;place-items:center;box-shadow:inset 0 .25cqw 0 rgba(255,255,255,.6),0 .55cqw 0 #A9803F"><svg width="50%" height="50%" viewBox="0 0 24 24" fill="none" stroke="#5A3418" stroke-width="2.8" stroke-linecap="round"><path d="M9 9a3 3 0 1 1 4.2 2.8c-.8.4-1.2 1-1.2 2" /><line x1="12" y1="18" x2="12" y2="18" /></svg></div>
+      </div>
+    </div>
+
+    <div style="display:flex;flex-wrap:wrap;gap:12px">
+      <div style="flex:1;min-width:240px;background:rgba(251,243,226,.07);border-radius:14px;padding:16px 18px;border:1px solid rgba(217,165,102,.25)">
+        <div style="font-weight:800;font-size:13px;margin-bottom:6px;color:#FFD666">Board geometry</div>
+        <div style="font-size:13px;line-height:1.55;color:#E2CBA6">9×9 cells, no gap. Separators are 1px inset shadows at 30% wood/700. Barricades are 2 cells long, 1.5cqw thick, centred on the cell boundary. Goal rows carry a tinted band plus a 3px edge line so the objective reads without color.</div>
+      </div>
+      <div style="flex:1;min-width:240px;background:rgba(251,243,226,.07);border-radius:14px;padding:16px 18px;border:1px solid rgba(217,165,102,.25)">
+        <div style="font-weight:800;font-size:13px;margin-bottom:6px;color:#FFD666">HUD safe areas</div>
+        <div style="font-size:13px;line-height:1.55;color:#E2CBA6">Board occupies the centre 38% of width and is never overlapped. Player rails sit in the outer 20cqw columns, action bar in the bottom 8cqw, turn sign in the top 6cqw. On mobile the rails stack above and the action bar below.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======== 12. MATCHMAKING & COUNTDOWN ======== -->
+  <div style="display:flex;flex-direction:column;gap:22px">
+    <div style="display:flex;align-items:baseline;gap:14px;border-bottom:2px solid rgba(217,165,102,.28);padding-bottom:12px">
+      <div style="font-family:Fredoka;font-size:13px;color:#D9A566;letter-spacing:.2em">12</div>
+      <div style="font-family:Fredoka;font-size:26px;color:#FBF3E2">Matchmaking &amp; countdown</div>
+      <div style="margin-left:auto;font-size:13px;color:#B2946E">slot states: occupied · ready · loading · empty</div>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:18px">
+      <div style="container-type:inline-size;aspect-ratio:4/3;border-radius:18px;overflow:hidden;position:relative;background:radial-gradient(120% 100% at 50% 0%, #5E3C1E, #2A1A0E 80%);box-shadow:0 12px 26px rgba(0,0,0,.4)">
+        <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3cqw;padding:4cqw">
+          <div style="background:linear-gradient(#EFD9AE,#D9BE8E);border-radius:2cqw;padding:1.6cqw 4cqw;box-shadow:inset 0 .5cqw 0 rgba(255,255,255,.6),0 1cqw 0 #A9803F"><div style="font-family:Fredoka;font-weight:700;font-size:3.6cqw;color:#3B2412;letter-spacing:.03em">FINDING MATCH</div></div>
+          <div style="font-family:Fredoka;font-weight:600;font-size:2.6cqw;color:#FFD666;letter-spacing:.1em">CLASSIC DUEL · 1v1</div>
+          <div style="display:flex;gap:2.4cqw">
+            <div style="width:17cqw;background:linear-gradient(#C68B4E,#A96C36);border-radius:2cqw;padding:2cqw 1cqw;display:flex;flex-direction:column;align-items:center;gap:1.2cqw;box-shadow:inset 0 .4cqw 0 rgba(255,255,255,.35),0 .9cqw 0 #5A3418">
+              <div style="width:8cqw;height:8cqw;border-radius:50%;background:linear-gradient(#4A99E0,#2266B0);display:grid;place-items:center;box-shadow:inset 0 0 0 .5cqw #EFD9AE"><div style="width:3cqw;height:3cqw;border-radius:50%;background:#FBF3E2"></div></div>
+              <div style="font-family:Fredoka;font-weight:600;font-size:2.2cqw;color:#FFF8E6">YOU</div>
+              <div style="font-size:1.5cqw;font-weight:800;letter-spacing:.14em;color:#8CE07A">READY</div>
+            </div>
+            <div style="width:17cqw;border-radius:2cqw;padding:2cqw 1cqw;display:flex;flex-direction:column;align-items:center;gap:1.2cqw;border:.5cqw dashed rgba(217,165,102,.55);background:rgba(251,243,226,.05)">
+              <div style="width:8cqw;height:8cqw;border-radius:50%;border:.5cqw dashed rgba(217,165,102,.6)"></div>
+              <div style="font-family:Fredoka;font-weight:600;font-size:2.2cqw;color:#C9AE86">WAITING</div>
+              <div style="font-size:1.5cqw;font-weight:800;letter-spacing:.14em;color:#B2946E">EMPTY</div>
+            </div>
+          </div>
+          <div style="display:flex;gap:1.4cqw;align-items:center">
+            <div style="width:1.8cqw;height:1.8cqw;border-radius:50%;background:#FFD666"></div>
+            <div style="width:1.8cqw;height:1.8cqw;border-radius:50%;background:#FFD666"></div>
+            <div style="width:1.8cqw;height:1.8cqw;border-radius:50%;background:rgba(251,243,226,.25)"></div>
+            <div style="width:1.8cqw;height:1.8cqw;border-radius:50%;background:rgba(251,243,226,.25)"></div>
+          </div>
+          <div style="font-family:Fredoka;font-weight:600;font-size:2.2cqw;letter-spacing:.05em;color:#5A3418;background:linear-gradient(#EFD9AE,#D2B384);padding:1.4cqw 3.4cqw;border-radius:1.6cqw;box-shadow:inset 0 .4cqw 0 rgba(255,255,255,.6),0 .8cqw 0 #A9803F">CANCEL</div>
+        </div>
+      </div>
+
+      <div style="container-type:inline-size;aspect-ratio:4/3;border-radius:18px;overflow:hidden;position:relative;background:radial-gradient(120% 100% at 50% 40%, #6A4423, #2A1A0E 80%);box-shadow:0 12px 26px rgba(0,0,0,.4)">
+        <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3cqw">
+          <div style="display:flex;align-items:center;gap:3cqw">
+            <div style="width:15cqw;height:15cqw;border-radius:3cqw;background:repeating-linear-gradient(92deg, rgba(0,0,0,.05) 0 3px, rgba(0,0,0,0) 3px 10px), linear-gradient(#EFD9AE,#D2B384);display:grid;place-items:center;box-shadow:inset 0 .7cqw 0 rgba(255,255,255,.6),inset 0 -1cqw 0 rgba(122,74,34,.2),0 1.4cqw 0 #A9803F,0 2.4cqw 3cqw rgba(0,0,0,.45);transform:rotate(-3deg)"><div style="font-family:Fredoka;font-weight:700;font-size:9cqw;color:#3B2412">3</div></div>
+            <div style="width:11cqw;height:11cqw;border-radius:2.4cqw;background:linear-gradient(#EFD9AE,#D2B384);display:grid;place-items:center;box-shadow:inset 0 .5cqw 0 rgba(255,255,255,.6),0 1cqw 0 #A9803F;opacity:.55;transform:rotate(2deg)"><div style="font-family:Fredoka;font-weight:700;font-size:6.5cqw;color:#3B2412">2</div></div>
+            <div style="width:8cqw;height:8cqw;border-radius:1.8cqw;background:linear-gradient(#EFD9AE,#D2B384);display:grid;place-items:center;box-shadow:inset 0 .4cqw 0 rgba(255,255,255,.6),0 .8cqw 0 #A9803F;opacity:.3"><div style="font-family:Fredoka;font-weight:700;font-size:4.6cqw;color:#3B2412">1</div></div>
+          </div>
+          <div style="display:flex;align-items:center;gap:1cqw">
+            <div style="font-family:Fredoka;font-weight:700;font-size:7cqw;color:#FFE08A;text-shadow:0 .4cqw 0 #E87A2C,0 .8cqw 0 #B8500F,0 1.4cqw 2cqw rgba(0,0,0,.5);letter-spacing:.02em">GO!</div>
+          </div>
+          <div style="font-size:1.7cqw;font-weight:800;letter-spacing:.2em;color:#B2946E">WOODEN TILE PER DIGIT · SCALE-IN 120ms, OUT 180ms</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======== 13. END SCREENS ======== -->
+  <div style="display:flex;flex-direction:column;gap:22px">
+    <div style="display:flex;align-items:baseline;gap:14px;border-bottom:2px solid rgba(217,165,102,.28);padding-bottom:12px">
+      <div style="font-family:Fredoka;font-size:13px;color:#D9A566;letter-spacing:.2em">13</div>
+      <div style="font-family:Fredoka;font-size:26px;color:#FBF3E2">Victory &amp; defeat</div>
+      <div style="margin-left:auto;font-size:13px;color:#B2946E">same card frame, different paint — defeat stays friendly</div>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:18px">
+      <div style="container-type:inline-size;border-radius:18px;padding:5cqw;position:relative;overflow:hidden;background:radial-gradient(120% 100% at 50% 0%, #6A4423, #2A1A0E 80%);box-shadow:0 12px 26px rgba(0,0,0,.4)">
+        <div style="position:absolute;top:3cqw;left:8cqw;width:1.6cqw;height:3cqw;background:#E8B32B;border-radius:.3cqw;transform:rotate(22deg)"></div>
+        <div style="position:absolute;top:6cqw;left:22cqw;width:1.4cqw;height:2.6cqw;background:#2F7FD1;border-radius:.3cqw;transform:rotate(-34deg)"></div>
+        <div style="position:absolute;top:2cqw;right:14cqw;width:1.5cqw;height:2.8cqw;background:#4BA63C;border-radius:.3cqw;transform:rotate(48deg)"></div>
+        <div style="position:absolute;top:9cqw;right:6cqw;width:1.4cqw;height:2.6cqw;background:#D9443F;border-radius:.3cqw;transform:rotate(-16deg)"></div>
+        <div style="position:absolute;bottom:4cqw;left:5cqw;width:1.4cqw;height:2.6cqw;background:#8B5FC4;border-radius:.3cqw;transform:rotate(30deg)"></div>
+        <div style="background:repeating-linear-gradient(92deg, rgba(0,0,0,.04) 0 3px, rgba(0,0,0,0) 3px 11px), linear-gradient(#C68B4E,#A96C36);border-radius:3cqw;padding:2cqw;box-shadow:inset 0 .6cqw 0 rgba(255,255,255,.4),0 1.6cqw 0 #5A3418,0 2.6cqw 3.4cqw rgba(0,0,0,.4);position:relative">
+          <div style="background:linear-gradient(#FDF6E7,#F2E4C6);border-radius:2cqw;padding:4cqw 3cqw;display:flex;flex-direction:column;align-items:center;gap:1.8cqw;box-shadow:inset 0 0 0 .3cqw rgba(122,74,34,.18)">
+            <div style="display:flex;align-items:center;gap:1.4cqw">
+              <svg width="7%" height="7%" viewBox="0 0 24 24" fill="none" stroke="#B8500F" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="min-width:7cqw;min-height:7cqw"><path d="M7 4h10v5a5 5 0 0 1-10 0z" /><path d="M7 5H4v2a3 3 0 0 0 3 3" /><path d="M17 5h3v2a3 3 0 0 1-3 3" /><line x1="12" y1="14" x2="12" y2="18" /><line x1="8" y1="20" x2="16" y2="20" /></svg>
+              <div style="font-family:Fredoka;font-weight:700;font-size:6cqw;line-height:1;color:#FFE08A;text-shadow:0 .3cqw 0 #E87A2C,0 .6cqw 0 #B8500F,0 1cqw 1.4cqw rgba(0,0,0,.25)">VICTORY!</div>
+            </div>
+            <div style="display:flex;align-items:center;gap:1.4cqw;background:rgba(122,74,34,.1);border-radius:99cqw;padding:1cqw 2cqw">
+              <div style="width:5cqw;height:5cqw;border-radius:50%;background:linear-gradient(#4A99E0,#2266B0);display:grid;place-items:center;box-shadow:inset 0 0 0 .3cqw #EFD9AE"><div style="width:1.8cqw;height:1.8cqw;border-radius:50%;background:#FBF3E2"></div></div>
+              <div style="font-family:Fredoka;font-weight:600;font-size:3cqw;color:#3B2412">Sebastian</div>
+            </div>
+            <div style="font-size:2cqw;font-weight:600;color:#5A3418">Reached the far side in 24 moves.</div>
+            <div style="display:flex;gap:4cqw;margin:.6cqw 0">
+              <div style="text-align:center"><div style="font-family:Fredoka;font-weight:700;font-size:3.4cqw;color:#3B2412">24</div><div style="font-size:1.4cqw;font-weight:800;letter-spacing:.14em;color:#8A6034">MOVES</div></div>
+              <div style="text-align:center"><div style="font-family:Fredoka;font-weight:700;font-size:3.4cqw;color:#3B2412">6</div><div style="font-size:1.4cqw;font-weight:800;letter-spacing:.14em;color:#8A6034">WALLS USED</div></div>
+              <div style="text-align:center"><div style="font-family:Fredoka;font-weight:700;font-size:3.4cqw;color:#3B2412">4:12</div><div style="font-size:1.4cqw;font-weight:800;letter-spacing:.14em;color:#8A6034">TIME</div></div>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:1.2cqw;width:100%;max-width:34cqw">
+              <div style="text-align:center;font-family:Fredoka;font-weight:600;font-size:2.4cqw;letter-spacing:.05em;color:#FFF8E6;background:linear-gradient(#5CC24A,#41972F);padding:1.4cqw;border-radius:1.6cqw;box-shadow:inset 0 .3cqw 0 rgba(255,255,255,.45),0 .8cqw 0 #2A6520">REMATCH</div>
+              <div style="text-align:center;font-family:Fredoka;font-weight:600;font-size:2.2cqw;letter-spacing:.05em;color:#5A3418;background:linear-gradient(#EFD9AE,#D2B384);padding:1.2cqw;border-radius:1.6cqw;box-shadow:inset 0 .3cqw 0 rgba(255,255,255,.6),0 .7cqw 0 #A9803F">MAIN MENU</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div style="container-type:inline-size;border-radius:18px;padding:5cqw;position:relative;overflow:hidden;background:radial-gradient(120% 100% at 50% 0%, #4C3018, #241608 80%);box-shadow:0 12px 26px rgba(0,0,0,.4)">
+        <div style="background:linear-gradient(#C68B4E,#A96C36);border-radius:3cqw;padding:2cqw;box-shadow:inset 0 .6cqw 0 rgba(255,255,255,.4),0 1.6cqw 0 #5A3418,0 2.6cqw 3.4cqw rgba(0,0,0,.4)">
+          <div style="background:linear-gradient(#FDF6E7,#F2E4C6);border-radius:2cqw;padding:4cqw 3cqw;display:flex;flex-direction:column;align-items:center;gap:1.8cqw;box-shadow:inset 0 0 0 .3cqw rgba(122,74,34,.18)">
+            <div style="font-family:Fredoka;font-weight:700;font-size:5.4cqw;line-height:1;color:#3B2412">GOOD GAME!</div>
+            <div style="display:flex;align-items:center;gap:1.4cqw;background:rgba(122,74,34,.1);border-radius:99cqw;padding:1cqw 2cqw">
+              <div style="width:5cqw;height:5cqw;border-radius:50%;background:linear-gradient(#E4635E,#C2352F);display:grid;place-items:center;box-shadow:inset 0 0 0 .3cqw #EFD9AE"><div style="width:1.7cqw;height:1.7cqw;background:#FBF3E2;transform:rotate(45deg);border-radius:.2cqw"></div></div>
+              <div style="font-family:Fredoka;font-weight:600;font-size:2.8cqw;color:#3B2412">Mika reached the goal</div>
+            </div>
+            <div style="font-size:2cqw;font-weight:600;color:#5A3418;text-align:center;max-width:36cqw;line-height:1.45">You were three squares away. Nice wall on turn 11.</div>
+            <div style="display:flex;gap:1.4cqw;align-items:center;margin:.4cqw 0">
+              <div style="width:3.4cqw;height:3.4cqw;border-radius:50%;background:#2F7FD1;display:grid;place-items:center"><div style="width:1.2cqw;height:1.2cqw;border-radius:50%;background:#FBF3E2"></div></div>
+              <div style="font-family:Fredoka;font-weight:600;font-size:2.2cqw;color:#8A6034">2nd</div>
+              <div style="width:.3cqw;height:2.6cqw;background:rgba(122,74,34,.25)"></div>
+              <div style="font-size:1.6cqw;font-weight:800;letter-spacing:.14em;color:#8A6034">+12 XP</div>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:1.2cqw;width:100%;max-width:34cqw">
+              <div style="text-align:center;font-family:Fredoka;font-weight:600;font-size:2.4cqw;letter-spacing:.05em;color:#FFF8E6;background:linear-gradient(#F0903F,#D2661F);padding:1.4cqw;border-radius:1.6cqw;box-shadow:inset 0 .3cqw 0 rgba(255,255,255,.4),0 .8cqw 0 #9E4A12">REMATCH</div>
+              <div style="text-align:center;font-family:Fredoka;font-weight:600;font-size:2.2cqw;letter-spacing:.05em;color:#5A3418;background:linear-gradient(#EFD9AE,#D2B384);padding:1.2cqw;border-radius:1.6cqw;box-shadow:inset 0 .3cqw 0 rgba(255,255,255,.6),0 .7cqw 0 #A9803F">MAIN MENU</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======== 14. HOW TO PLAY ======== -->
+  <div style="display:flex;flex-direction:column;gap:22px">
+    <div style="display:flex;align-items:baseline;gap:14px;border-bottom:2px solid rgba(217,165,102,.28);padding-bottom:12px">
+      <div style="font-family:Fredoka;font-size:13px;color:#D9A566;letter-spacing:.2em">14</div>
+      <div style="font-family:Fredoka;font-size:26px;color:#FBF3E2">How to play</div>
+      <div style="margin-left:auto;font-size:13px;color:#B2946E">instruction-manual cards · mini board diagrams</div>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:18px">
+      <div style="background:linear-gradient(#FDF6E7,#F2E4C6);border-radius:16px;padding:18px;display:flex;flex-direction:column;gap:14px;box-shadow:inset 0 0 0 2px rgba(122,74,34,.15),0 10px 20px rgba(0,0,0,.3)">
+        <div style="display:flex;align-items:center;gap:10px"><div style="width:28px;height:28px;border-radius:9px;background:#B5763C;display:grid;place-items:center;font-family:Fredoka;font-weight:700;font-size:15px;color:#FFF8E6">1</div><div style="font-family:Fredoka;font-weight:600;font-size:18px;color:#3B2412">Move one square</div></div>
+        <div style="position:relative;aspect-ratio:1;border-radius:10px;background:linear-gradient(#EFD9AE,#DCC091);box-shadow:inset 0 0 0 3px #B5763C">
+          <div style="position:absolute;inset:6px;display:grid;grid-template-columns:repeat(5,1fr);grid-template-rows:repeat(5,1fr)">
+            <div style="box-shadow:inset -1px -1px 0 rgba(122,74,34,.3)"></div><div style="box-shadow:inset -1px -1px 0 rgba(122,74,34,.3)"></div><div style="box-shadow:inset -1px -1px 0 rgba(122,74,34,.3)"></div><div style="box-shadow:inset -1px -1px 0 rgba(122,74,34,.3)"></div><div style="box-shadow:inset -1px -1px 0 rgba(122,74,34,.3)"></div>
+            <div style="box-shadow:inset -1px -1px 0 rgba(122,74,34,.3)"></div><div style="box-shadow:inset -1px -1px 0 rgba(122,74,34,.3)"></div><div style="box-shadow:inset -1px -1px 0 rgba(122,74,34,.3)"></div><div style="box-shadow:inset -1px -1px 0 rgba(122,74,34,.3)"></div><div style="box-shadow:inset -1px -1px 0 rgba(122,74,34,.3)"></div>
+            <div style="box-shadow:inset -1px -1px 0 rgba(122,74,34,.3)"></div><div style="box-shadow:inset -1px -1px 0 rgba(122,74,34,.3)"></div><div style="box-shadow:inset -1px -1px 0 rgba(122,74,34,.3)"></div><div style="box-shadow:inset -1px -1px 0 rgba(122,74,34,.3)"></div><div style="box-shadow:inset -1px -1px 0 rgba(122,74,34,.3)"></div>
+            <div style="box-shadow:inset -1px -1px 0 rgba(122,74,34,.3)"></div><div style="box-shadow:inset -1px -1px 0 rgba(122,74,34,.3)"></div><div style="box-shadow:inset -1px -1px 0 rgba(122,74,34,.3)"></div><div style="box-shadow:inset -1px -1px 0 rgba(122,74,34,.3)"></div><div style="box-shadow:inset -1px -1px 0 rgba(122,74,34,.3)"></div>
+            <div style="box-shadow:inset -1px -1px 0 rgba(122,74,34,.3)"></div><div style="box-shadow:inset -1px -1px 0 rgba(122,74,34,.3)"></div><div style="box-shadow:inset -1px -1px 0 rgba(122,74,34,.3)"></div><div style="box-shadow:inset -1px -1px 0 rgba(122,74,34,.3)"></div><div style="box-shadow:inset -1px -1px 0 rgba(122,74,34,.3)"></div>
+          </div>
+          <div style="position:absolute;left:40%;top:60%;width:20%;height:20%;display:grid;place-items:center"><div style="width:74%;height:74%;border-radius:50%;background:#2F7FD1;box-shadow:inset 0 0 0 3px #EFD9AE"></div></div>
+          <div style="position:absolute;left:40%;top:40%;width:20%;height:20%;display:grid;place-items:center"><div style="width:34%;height:34%;border-radius:50%;background:#FFD666;box-shadow:0 0 0 2px rgba(90,52,24,.3)"></div></div>
+          <div style="position:absolute;left:20%;top:60%;width:20%;height:20%;display:grid;place-items:center"><div style="width:34%;height:34%;border-radius:50%;background:#FFD666;box-shadow:0 0 0 2px rgba(90,52,24,.3)"></div></div>
+          <div style="position:absolute;left:60%;top:60%;width:20%;height:20%;display:grid;place-items:center"><div style="width:34%;height:34%;border-radius:50%;background:#FFD666;box-shadow:0 0 0 2px rgba(90,52,24,.3)"></div></div>
+        </div>
+        <div style="font-size:14px;line-height:1.5;color:#5A3418">On your turn, step one square up, down, left or right. No diagonals.</div>
+      </div>
+
+      <div style="background:linear-gradient(#FDF6E7,#F2E4C6);border-radius:16px;padding:18px;display:flex;flex-direction:column;gap:14px;box-shadow:inset 0 0 0 2px rgba(122,74,34,.15),0 10px 20px rgba(0,0,0,.3)">
+        <div style="display:flex;align-items:center;gap:10px"><div style="width:28px;height:28px;border-radius:9px;background:#B5763C;display:grid;place-items:center;font-family:Fredoka;font-weight:700;font-size:15px;color:#FFF8E6">2</div><div style="font-family:Fredoka;font-weight:600;font-size:18px;color:#3B2412">Place barricades</div></div>
+        <div style="position:relative;aspect-ratio:1;border-radius:10px;background:linear-gradient(#EFD9AE,#DCC091);box-shadow:inset 0 0 0 3px #B5763C">
+          <div style="position:absolute;inset:6px;display:grid;grid-template-columns:repeat(5,1fr);grid-template-rows:repeat(5,1fr)">
+            <div style="box-shadow:inset -1px -1px 0 rgba(122,74,34,.3)"></div><div style="box-shadow:inset -1px -1px 0 rgba(122,74,34,.3)"></div><div style="box-shadow:inset -1px -1px 0 rgba(122,74,34,.3)"></div><div style="box-shadow:inset -1px -1px 0 rgba(122,74,34,.3)"></div><div style="box-shadow:inset -1px -1px 0 rgba(122,74,34,.3)"></div>
+            <div style="box-shadow:inset -1px -1px 0 rgba(122,74,34,.3)"></div><div style="box-shadow:inset -1px -1px 0 rgba(122,74,34,.3)"></div><div style="box-shadow:inset -1px -1px 0 rgba(122,74,34,.3)"></div><div style="box-shadow:inset -1px -1px 0 rgba(122,74,34,.3)"></div><div style="box-shadow:inset -1px -1px 0 rgba(122,74,34,.3)"></div>
+            <div style="box-shadow:inset -1px -1px 0 rgba(122,74,34,.3)"></div><div style="box-shadow:inset -1px -1px 0 rgba(122,74,34,.3)"></div><div style="box-shadow:inset -1px -1px 0 rgba(122,74,34,.3)"></div><div style="box-shadow:inset -1px -1px 0 rgba(122,74,34,.3)"></div><div style="box-shadow:inset -1px -1px 0 rgba(122,74,34,.3)"></div>
+            <div style="box-shadow:inset -1px -1px 0 rgba(122,74,34,.3)"></div><div style="box-shadow:inset -1px -1px 0 rgba(122,74,34,.3)"></div><div style="box-shadow:inset -1px -1px 0 rgba(122,74,34,.3)"></div><div style="box-shadow:inset -1px -1px 0 rgba(122,74,34,.3)"></div><div style="box-shadow:inset -1px -1px 0 rgba(122,74,34,.3)"></div>
+            <div style="box-shadow:inset -1px -1px 0 rgba(122,74,34,.3)"></div><div style="box-shadow:inset -1px -1px 0 rgba(122,74,34,.3)"></div><div style="box-shadow:inset -1px -1px 0 rgba(122,74,34,.3)"></div><div style="box-shadow:inset -1px -1px 0 rgba(122,74,34,.3)"></div><div style="box-shadow:inset -1px -1px 0 rgba(122,74,34,.3)"></div>
+          </div>
+          <div style="position:absolute;left:40%;top:60%;width:20%;height:20%;display:grid;place-items:center"><div style="width:74%;height:74%;border-radius:50%;background:#D9443F;box-shadow:inset 0 0 0 3px #EFD9AE"></div></div>
+          <div style="position:absolute;left:30%;top:56%;width:40%;height:8%;border-radius:99px;background:linear-gradient(#C68B4E,#9C6330);box-shadow:0 3px 0 #5A3418"></div>
+        </div>
+        <div style="font-size:14px;line-height:1.5;color:#5A3418">Spend a barricade instead of moving. It spans two squares and blocks both sides.</div>
+      </div>
+
+      <div style="background:linear-gradient(#FDF6E7,#F2E4C6);border-radius:16px;padding:18px;display:flex;flex-direction:column;gap:14px;box-shadow:inset 0 0 0 2px rgba(122,74,34,.15),0 10px 20px rgba(0,0,0,.3)">
+        <div style="display:flex;align-items:center;gap:10px"><div style="width:28px;height:28px;border-radius:9px;background:#B5763C;display:grid;place-items:center;font-family:Fredoka;font-weight:700;font-size:15px;color:#FFF8E6">3</div><div style="font-family:Fredoka;font-weight:600;font-size:18px;color:#3B2412">Never seal a path</div></div>
+        <div style="position:relative;aspect-ratio:1;border-radius:10px;background:linear-gradient(#EFD9AE,#DCC091);box-shadow:inset 0 0 0 3px #B5763C">
+          <div style="position:absolute;inset:6px;display:grid;grid-template-columns:repeat(5,1fr);grid-template-rows:repeat(5,1fr)">
+            <div style="box-shadow:inset -1px -1px 0 rgba(122,74,34,.3)"></div><div style="box-shadow:inset -1px -1px 0 rgba(122,74,34,.3)"></div><div style="box-shadow:inset -1px -1px 0 rgba(122,74,34,.3)"></div><div style="box-shadow:inset -1px -1px 0 rgba(122,74,34,.3)"></div><div style="box-shadow:inset -1px -1px 0 rgba(122,74,34,.3)"></div>
+            <div style="box-shadow:inset -1px -1px 0 rgba(122,74,34,.3)"></div><div style="box-shadow:inset -1px -1px 0 rgba(122,74,34,.3)"></div><div style="box-shadow:inset -1px -1px 0 rgba(122,74,34,.3)"></div><div style="box-shadow:inset -1px -1px 0 rgba(122,74,34,.3)"></div><div style="box-shadow:inset -1px -1px 0 rgba(122,74,34,.3)"></div>
+            <div style="box-shadow:inset -1px -1px 0 rgba(122,74,34,.3)"></div><div style="box-shadow:inset -1px -1px 0 rgba(122,74,34,.3)"></div><div style="box-shadow:inset -1px -1px 0 rgba(122,74,34,.3)"></div><div style="box-shadow:inset -1px -1px 0 rgba(122,74,34,.3)"></div><div style="box-shadow:inset -1px -1px 0 rgba(122,74,34,.3)"></div>
+            <div style="box-shadow:inset -1px -1px 0 rgba(122,74,34,.3)"></div><div style="box-shadow:inset -1px -1px 0 rgba(122,74,34,.3)"></div><div style="box-shadow:inset -1px -1px 0 rgba(122,74,34,.3)"></div><div style="box-shadow:inset -1px -1px 0 rgba(122,74,34,.3)"></div><div style="box-shadow:inset -1px -1px 0 rgba(122,74,34,.3)"></div>
+            <div style="box-shadow:inset -1px -1px 0 rgba(122,74,34,.3)"></div><div style="box-shadow:inset -1px -1px 0 rgba(122,74,34,.3)"></div><div style="box-shadow:inset -1px -1px 0 rgba(122,74,34,.3)"></div><div style="box-shadow:inset -1px -1px 0 rgba(122,74,34,.3)"></div><div style="box-shadow:inset -1px -1px 0 rgba(122,74,34,.3)"></div>
+          </div>
+          <div style="position:absolute;left:40%;top:60%;width:20%;height:20%;display:grid;place-items:center"><div style="width:74%;height:74%;border-radius:50%;background:#2F7FD1;box-shadow:inset 0 0 0 3px #EFD9AE"></div></div>
+          <div style="position:absolute;left:30%;top:36%;width:40%;height:8%;border-radius:99px;background:repeating-linear-gradient(45deg,#C2352F 0 5px,#8C1F1A 5px 10px);box-shadow:0 0 0 2px #FDF6E7"></div>
+          <div style="position:absolute;left:50%;top:26%;transform:translate(-50%,0);background:#FDF6E7;border-radius:6px;padding:3px 8px;box-shadow:0 0 0 2px #C2352F"><div style="font-size:10px;font-weight:800;color:#C2352F">NOT ALLOWED</div></div>
+        </div>
+        <div style="font-size:14px;line-height:1.5;color:#5A3418">A barricade is illegal if it leaves any player with no route to their goal.</div>
+      </div>
+
+      <div style="background:linear-gradient(#FDF6E7,#F2E4C6);border-radius:16px;padding:18px;display:flex;flex-direction:column;gap:14px;box-shadow:inset 0 0 0 2px rgba(122,74,34,.15),0 10px 20px rgba(0,0,0,.3)">
+        <div style="display:flex;align-items:center;gap:10px"><div style="width:28px;height:28px;border-radius:9px;background:#B5763C;display:grid;place-items:center;font-family:Fredoka;font-weight:700;font-size:15px;color:#FFF8E6">4</div><div style="font-family:Fredoka;font-weight:600;font-size:18px;color:#3B2412">Reach your goal</div></div>
+        <div style="position:relative;aspect-ratio:1;border-radius:10px;background:linear-gradient(#EFD9AE,#DCC091);box-shadow:inset 0 0 0 3px #B5763C">
+          <div style="position:absolute;inset:6px;display:grid;grid-template-columns:repeat(5,1fr);grid-template-rows:repeat(5,1fr)">
+            <div style="box-shadow:inset -1px -1px 0 rgba(122,74,34,.3)"></div><div style="box-shadow:inset -1px -1px 0 rgba(122,74,34,.3)"></div><div style="box-shadow:inset -1px -1px 0 rgba(122,74,34,.3)"></div><div style="box-shadow:inset -1px -1px 0 rgba(122,74,34,.3)"></div><div style="box-shadow:inset -1px -1px 0 rgba(122,74,34,.3)"></div>
+            <div style="box-shadow:inset -1px -1px 0 rgba(122,74,34,.3)"></div><div style="box-shadow:inset -1px -1px 0 rgba(122,74,34,.3)"></div><div style="box-shadow:inset -1px -1px 0 rgba(122,74,34,.3)"></div><div style="box-shadow:inset -1px -1px 0 rgba(122,74,34,.3)"></div><div style="box-shadow:inset -1px -1px 0 rgba(122,74,34,.3)"></div>
+            <div style="box-shadow:inset -1px -1px 0 rgba(122,74,34,.3)"></div><div style="box-shadow:inset -1px -1px 0 rgba(122,74,34,.3)"></div><div style="box-shadow:inset -1px -1px 0 rgba(122,74,34,.3)"></div><div style="box-shadow:inset -1px -1px 0 rgba(122,74,34,.3)"></div><div style="box-shadow:inset -1px -1px 0 rgba(122,74,34,.3)"></div>
+            <div style="box-shadow:inset -1px -1px 0 rgba(122,74,34,.3)"></div><div style="box-shadow:inset -1px -1px 0 rgba(122,74,34,.3)"></div><div style="box-shadow:inset -1px -1px 0 rgba(122,74,34,.3)"></div><div style="box-shadow:inset -1px -1px 0 rgba(122,74,34,.3)"></div><div style="box-shadow:inset -1px -1px 0 rgba(122,74,34,.3)"></div>
+            <div style="box-shadow:inset -1px -1px 0 rgba(122,74,34,.3)"></div><div style="box-shadow:inset -1px -1px 0 rgba(122,74,34,.3)"></div><div style="box-shadow:inset -1px -1px 0 rgba(122,74,34,.3)"></div><div style="box-shadow:inset -1px -1px 0 rgba(122,74,34,.3)"></div><div style="box-shadow:inset -1px -1px 0 rgba(122,74,34,.3)"></div>
+          </div>
+          <div style="position:absolute;top:6px;left:6px;right:6px;height:19%;background:linear-gradient(rgba(47,127,209,.3),rgba(47,127,209,.05));box-shadow:inset 0 3px 0 rgba(47,127,209,.6)"></div>
+          <div style="position:absolute;left:40%;top:20%;width:20%;height:20%;display:grid;place-items:center"><div style="width:74%;height:74%;border-radius:50%;background:#2F7FD1;box-shadow:inset 0 0 0 3px #EFD9AE,0 0 0 4px #FFD666"></div></div>
+          <div style="position:absolute;left:44%;top:44%;width:12%;height:36%;background:repeating-linear-gradient(0deg, rgba(47,127,209,.55) 0 5px, rgba(0,0,0,0) 5px 10px);border-radius:99px"></div>
+        </div>
+        <div style="font-size:14px;line-height:1.5;color:#5A3418">Touch any square on the opposite edge and the match is yours.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======== 15. SETTINGS / SHOP / MODAL ======== -->
+  <div style="display:flex;flex-direction:column;gap:22px">
+    <div style="display:flex;align-items:baseline;gap:14px;border-bottom:2px solid rgba(217,165,102,.28);padding-bottom:12px">
+      <div style="font-family:Fredoka;font-size:13px;color:#D9A566;letter-spacing:.2em">15</div>
+      <div style="font-family:Fredoka;font-size:26px;color:#FBF3E2">Panels: settings, shop, modal</div>
+      <div style="margin-left:auto;font-size:13px;color:#B2946E">one wooden frame, three payloads</div>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:18px">
+      <div style="background:linear-gradient(#C68B4E,#A96C36);border-radius:20px;padding:10px;box-shadow:inset 0 3px 0 rgba(255,255,255,.4),0 10px 0 #5A3418,0 18px 26px rgba(0,0,0,.35)">
+        <div style="background:linear-gradient(#FDF6E7,#F2E4C6);border-radius:14px;padding:18px;display:flex;flex-direction:column;gap:16px">
+          <div style="display:flex;align-items:center;justify-content:space-between"><div style="font-family:Fredoka;font-weight:600;font-size:21px;color:#3B2412">SETTINGS</div><div style="width:32px;height:32px;border-radius:10px;background:linear-gradient(#E4635E,#C2352F);display:grid;place-items:center;box-shadow:0 3px 0 #8C1F1A"><svg width="14" height="14" viewBox="0 0 24 24" stroke="#FFF8E6" stroke-width="3.6" stroke-linecap="round"><line x1="6" y1="6" x2="18" y2="18" /><line x1="18" y1="6" x2="6" y2="18" /></svg></div></div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap">
+            <div style="font-size:11px;font-weight:800;letter-spacing:.1em;color:#FFF8E6;background:#B5763C;padding:7px 12px;border-radius:9px;box-shadow:0 3px 0 #7A4A22">SOUND</div>
+            <div style="font-size:11px;font-weight:800;letter-spacing:.1em;color:#8A6034;background:rgba(122,74,34,.12);padding:7px 12px;border-radius:9px">GRAPHICS</div>
+            <div style="font-size:11px;font-weight:800;letter-spacing:.1em;color:#8A6034;background:rgba(122,74,34,.12);padding:7px 12px;border-radius:9px">ACCESSIBILITY</div>
+            <div style="font-size:11px;font-weight:800;letter-spacing:.1em;color:#8A6034;background:rgba(122,74,34,.12);padding:7px 12px;border-radius:9px">CONTROLS</div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:6px">
+            <div style="display:flex;justify-content:space-between;font-size:13px;font-weight:800;color:#5A3418"><div>MUSIC VOLUME</div><div>70</div></div>
+            <div style="height:16px;border-radius:99px;background:rgba(122,74,34,.18);position:relative;box-shadow:inset 0 2px 0 rgba(122,74,34,.15)"><div style="width:70%;height:100%;border-radius:99px;background:linear-gradient(#5CC24A,#41972F)"></div><div style="position:absolute;left:70%;top:50%;transform:translate(-50%,-50%);width:26px;height:26px;border-radius:9px;background:linear-gradient(#EFD9AE,#D2B384);box-shadow:inset 0 2px 0 rgba(255,255,255,.7),0 3px 0 #A9803F"></div></div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:6px">
+            <div style="display:flex;justify-content:space-between;font-size:13px;font-weight:800;color:#5A3418"><div>SOUND EFFECTS</div><div>90</div></div>
+            <div style="height:16px;border-radius:99px;background:rgba(122,74,34,.18);position:relative"><div style="width:90%;height:100%;border-radius:99px;background:linear-gradient(#5CC24A,#41972F)"></div><div style="position:absolute;left:90%;top:50%;transform:translate(-50%,-50%);width:26px;height:26px;border-radius:9px;background:linear-gradient(#EFD9AE,#D2B384);box-shadow:inset 0 2px 0 rgba(255,255,255,.7),0 3px 0 #A9803F"></div></div>
+          </div>
+          <div style="display:flex;align-items:center;justify-content:space-between"><div style="font-size:13px;font-weight:800;color:#5A3418">SCREEN SHAKE</div><div style="width:58px;height:30px;border-radius:99px;background:linear-gradient(#5CC24A,#41972F);position:relative;box-shadow:inset 0 2px 0 rgba(255,255,255,.3)"><div style="position:absolute;right:3px;top:3px;width:24px;height:24px;border-radius:50%;background:#FDF6E7;box-shadow:0 2px 0 rgba(0,0,0,.18)"></div></div></div>
+          <div style="display:flex;align-items:center;justify-content:space-between"><div style="font-size:13px;font-weight:800;color:#5A3418">COLORBLIND MODE</div><div style="width:58px;height:30px;border-radius:99px;background:rgba(122,74,34,.25);position:relative"><div style="position:absolute;left:3px;top:3px;width:24px;height:24px;border-radius:50%;background:#FDF6E7;box-shadow:0 2px 0 rgba(0,0,0,.18)"></div></div></div>
+          <div style="display:flex;align-items:center;justify-content:space-between"><div style="font-size:13px;font-weight:800;color:#5A3418">UI SCALE</div><div style="display:flex;gap:6px"><div style="font-size:11px;font-weight:800;color:#8A6034;background:rgba(122,74,34,.12);padding:6px 10px;border-radius:8px">S</div><div style="font-size:11px;font-weight:800;color:#FFF8E6;background:#B5763C;padding:6px 10px;border-radius:8px;box-shadow:0 3px 0 #7A4A22">M</div><div style="font-size:11px;font-weight:800;color:#8A6034;background:rgba(122,74,34,.12);padding:6px 10px;border-radius:8px">L</div></div></div>
+        </div>
+      </div>
+
+      <div style="background:linear-gradient(#C68B4E,#A96C36);border-radius:20px;padding:10px;box-shadow:inset 0 3px 0 rgba(255,255,255,.4),0 10px 0 #5A3418,0 18px 26px rgba(0,0,0,.35)">
+        <div style="background:linear-gradient(#FDF6E7,#F2E4C6);border-radius:14px;padding:18px;display:flex;flex-direction:column;gap:14px">
+          <div style="font-family:Fredoka;font-weight:600;font-size:21px;color:#3B2412">SHOP</div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap">
+            <div style="font-size:11px;font-weight:800;letter-spacing:.1em;color:#FFF8E6;background:#B5763C;padding:7px 12px;border-radius:9px;box-shadow:0 3px 0 #7A4A22">TOKENS</div>
+            <div style="font-size:11px;font-weight:800;letter-spacing:.1em;color:#8A6034;background:rgba(122,74,34,.12);padding:7px 12px;border-radius:9px">BARRICADES</div>
+            <div style="font-size:11px;font-weight:800;letter-spacing:.1em;color:#8A6034;background:rgba(122,74,34,.12);padding:7px 12px;border-radius:9px">BOARDS</div>
+            <div style="font-size:11px;font-weight:800;letter-spacing:.1em;color:#8A6034;background:rgba(122,74,34,.12);padding:7px 12px;border-radius:9px">EMOTES</div>
+          </div>
+          <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px">
+            <div style="background:#FBF3E2;border-radius:12px;padding:12px;display:flex;flex-direction:column;align-items:center;gap:8px;box-shadow:inset 0 0 0 2px rgba(122,74,34,.2),0 4px 10px rgba(0,0,0,.12)">
+              <div style="width:50px;height:50px;border-radius:50%;background:linear-gradient(#9E73D4,#7A4CB4);display:grid;place-items:center;box-shadow:inset 0 0 0 4px #EFD9AE,0 4px 0 #5C3490"><div style="width:16px;height:16px;border-radius:50%;background:#FBF3E2"></div></div>
+              <div style="font-weight:800;font-size:12px;color:#3B2412">Amethyst Token</div>
+              <div style="font-size:11px;font-weight:800;letter-spacing:.1em;color:#8B5FC4">RARE</div>
+              <div style="font-family:Fredoka;font-weight:600;font-size:14px;color:#FFF8E6;background:linear-gradient(#5CC24A,#41972F);padding:7px 16px;border-radius:10px;box-shadow:0 4px 0 #2A6520">199 R$</div>
+            </div>
+            <div style="background:#FBF3E2;border-radius:12px;padding:12px;display:flex;flex-direction:column;align-items:center;gap:8px;box-shadow:inset 0 0 0 2px rgba(122,74,34,.2),0 4px 10px rgba(0,0,0,.12)">
+              <div style="width:50px;height:50px;display:grid;place-items:center"><div style="width:46px;height:14px;border-radius:8px;background:linear-gradient(#3FBBAD,#25897E);box-shadow:inset 0 2px 0 rgba(255,255,255,.4),0 4px 0 #1A6660"></div></div>
+              <div style="font-weight:800;font-size:12px;color:#3B2412">Teal Painted Wall</div>
+              <div style="font-size:11px;font-weight:800;letter-spacing:.1em;color:#2FA89B">COMMON</div>
+              <div style="font-family:Fredoka;font-weight:600;font-size:14px;color:#FFF8E6;background:linear-gradient(#5CC24A,#41972F);padding:7px 16px;border-radius:10px;box-shadow:0 4px 0 #2A6520">79 R$</div>
+            </div>
+            <div style="background:#FBF3E2;border-radius:12px;padding:12px;display:flex;flex-direction:column;align-items:center;gap:8px;box-shadow:inset 0 0 0 2px rgba(122,74,34,.2),0 4px 10px rgba(0,0,0,.12);opacity:.75">
+              <div style="width:50px;height:50px;border-radius:12px;background:linear-gradient(#EFD9AE,#D2B384);display:grid;place-items:center;box-shadow:inset 0 2px 0 rgba(255,255,255,.6)"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#8A6034" stroke-width="2.6" stroke-linecap="round"><rect x="5" y="11" width="14" height="9" rx="2" /><path d="M8.5 11V8a3.5 3.5 0 0 1 7 0v3" /></svg></div>
+              <div style="font-weight:800;font-size:12px;color:#3B2412">Oak Grand Board</div>
+              <div style="font-size:11px;font-weight:800;letter-spacing:.1em;color:#8A6034">LOCKED</div>
+              <div style="font-family:Fredoka;font-weight:600;font-size:14px;color:#A08A6A;background:linear-gradient(#CFC0A4,#B8A88C);padding:7px 16px;border-radius:10px">LVL 12</div>
+            </div>
+            <div style="background:#FBF3E2;border-radius:12px;padding:12px;display:flex;flex-direction:column;align-items:center;gap:8px;box-shadow:inset 0 0 0 2px rgba(122,74,34,.2),0 4px 10px rgba(0,0,0,.12)">
+              <div style="width:50px;height:50px;border-radius:50%;background:linear-gradient(#F2C34A,#D19A1C);display:grid;place-items:center;box-shadow:inset 0 0 0 4px #EFD9AE,0 4px 0 #A8791A"><div style="width:0;height:0;border-left:9px solid transparent;border-right:9px solid transparent;border-bottom:15px solid #FBF3E2"></div></div>
+              <div style="font-weight:800;font-size:12px;color:#3B2412">Gold Rim Frame</div>
+              <div style="font-size:11px;font-weight:800;letter-spacing:.1em;color:#E87A2C">EQUIPPED</div>
+              <div style="font-family:Fredoka;font-weight:600;font-size:14px;color:#5A3418;background:linear-gradient(#EFD9AE,#D2B384);padding:7px 16px;border-radius:10px;box-shadow:0 4px 0 #A9803F">OWNED</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:16px">
+        <div style="background:linear-gradient(#C68B4E,#A96C36);border-radius:20px;padding:10px;box-shadow:inset 0 3px 0 rgba(255,255,255,.4),0 10px 0 #5A3418,0 18px 26px rgba(0,0,0,.35)">
+          <div style="background:linear-gradient(#FDF6E7,#F2E4C6);border-radius:14px;padding:22px 18px;display:flex;flex-direction:column;align-items:center;gap:14px">
+            <div style="width:46px;height:46px;border-radius:14px;background:linear-gradient(#F0903F,#D2661F);display:grid;place-items:center;box-shadow:inset 0 2px 0 rgba(255,255,255,.4),0 4px 0 #9E4A12"><div style="width:0;height:0;border-left:11px solid transparent;border-right:11px solid transparent;border-bottom:19px solid #FFF8E6"></div></div>
+            <div style="font-family:Fredoka;font-weight:600;font-size:20px;color:#3B2412;text-align:center">Leave the match?</div>
+            <div style="font-size:14px;line-height:1.5;color:#5A3418;text-align:center;max-width:250px">Your opponent wins by forfeit and you keep no XP from this round.</div>
+            <div style="display:flex;gap:10px;width:100%">
+              <div style="flex:1;text-align:center;font-family:Fredoka;font-weight:600;font-size:15px;color:#5A3418;background:linear-gradient(#EFD9AE,#D2B384);padding:11px;border-radius:12px;box-shadow:inset 0 2px 0 rgba(255,255,255,.6),0 5px 0 #A9803F">STAY</div>
+              <div style="flex:1;text-align:center;font-family:Fredoka;font-weight:600;font-size:15px;color:#FFF8E6;background:linear-gradient(#E4635E,#C2352F);padding:11px;border-radius:12px;box-shadow:inset 0 2px 0 rgba(255,255,255,.35),0 5px 0 #8C1F1A">LEAVE</div>
+            </div>
+          </div>
+        </div>
+        <div style="background:rgba(251,243,226,.07);border-radius:14px;padding:16px 18px;border:1px solid rgba(217,165,102,.25)">
+          <div style="font-weight:800;font-size:13px;margin-bottom:6px;color:#FFD666">Modal frame spec</div>
+          <div style="font-size:13px;line-height:1.55;color:#E2CBA6">Wood frame 10px, r=20; paper insert r=14, padding 18–22px. Backdrop rgba(42,26,14,.65). Scale-in from 0.92 over 140ms ease-out. Same frame serves confirmation, rematch, disconnect and cancelled-matchmaking modals — only icon, copy and button pair change.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======== 16. RESPONSIVE & EXPORT ======== -->
+  <div style="display:flex;flex-direction:column;gap:22px">
+    <div style="display:flex;align-items:baseline;gap:14px;border-bottom:2px solid rgba(217,165,102,.28);padding-bottom:12px">
+      <div style="font-family:Fredoka;font-size:13px;color:#D9A566;letter-spacing:.2em">16</div>
+      <div style="font-family:Fredoka;font-size:26px;color:#FBF3E2">Responsive &amp; export rules</div>
+      <div style="margin-left:auto;font-size:13px;color:#B2946E">board centred at every ratio</div>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:18px">
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <div style="font-size:11px;font-weight:800;letter-spacing:.18em;color:#B2946E">DESKTOP 16:9 / 16:10</div>
+        <div style="aspect-ratio:16/9;border-radius:12px;background:rgba(251,243,226,.06);border:2px dashed rgba(217,165,102,.4);display:flex;align-items:center;gap:8px;padding:12px">
+          <div style="width:20%;height:55%;border-radius:8px;background:rgba(217,165,102,.35);display:grid;place-items:center;font-size:10px;font-weight:800;color:#3B2412">INFO</div>
+          <div style="flex:1;aspect-ratio:1;max-height:100%;border-radius:8px;background:rgba(239,217,174,.85);display:grid;place-items:center;font-size:11px;font-weight:800;color:#3B2412;margin:0 auto">BOARD</div>
+          <div style="width:20%;height:55%;border-radius:8px;background:rgba(217,165,102,.35);display:grid;place-items:center;font-size:10px;font-weight:800;color:#3B2412">INFO</div>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <div style="font-size:11px;font-weight:800;letter-spacing:.18em;color:#B2946E">TABLET 4:3</div>
+        <div style="aspect-ratio:4/3;border-radius:12px;background:rgba(251,243,226,.06);border:2px dashed rgba(217,165,102,.4);display:flex;flex-direction:column;gap:8px;padding:12px;align-items:center">
+          <div style="width:100%;height:14%;border-radius:8px;background:rgba(217,165,102,.35);display:grid;place-items:center;font-size:10px;font-weight:800;color:#3B2412">INFO ROW</div>
+          <div style="flex:1;aspect-ratio:1;border-radius:8px;background:rgba(239,217,174,.85);display:grid;place-items:center;font-size:11px;font-weight:800;color:#3B2412">BOARD</div>
+          <div style="width:70%;height:12%;border-radius:8px;background:rgba(92,194,74,.5);display:grid;place-items:center;font-size:10px;font-weight:800;color:#3B2412">ACTIONS</div>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <div style="font-size:11px;font-weight:800;letter-spacing:.18em;color:#B2946E">MOBILE 9:16 (rotated view)</div>
+        <div style="aspect-ratio:3/4;border-radius:12px;background:rgba(251,243,226,.06);border:2px dashed rgba(217,165,102,.4);display:flex;flex-direction:column;gap:6px;padding:10px;align-items:center">
+          <div style="width:100%;height:11%;border-radius:7px;background:rgba(217,68,63,.4);display:grid;place-items:center;font-size:9px;font-weight:800;color:#FBF3E2">OPPONENT</div>
+          <div style="width:100%;aspect-ratio:1;border-radius:8px;background:rgba(239,217,174,.85);display:grid;place-items:center;font-size:11px;font-weight:800;color:#3B2412">BOARD</div>
+          <div style="width:100%;height:11%;border-radius:7px;background:rgba(47,127,209,.4);display:grid;place-items:center;font-size:9px;font-weight:800;color:#FBF3E2">YOU</div>
+          <div style="width:100%;flex:1;border-radius:7px;background:rgba(92,194,74,.45);display:grid;place-items:center;font-size:10px;font-weight:800;color:#3B2412">ACTIONS · 44px MIN</div>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px">
+      <div style="background:rgba(251,243,226,.07);border-radius:14px;padding:16px 18px;border:1px solid rgba(217,165,102,.25)">
+        <div style="font-weight:800;font-size:13px;margin-bottom:8px;color:#FFD666">Export as separate layers</div>
+        <div style="font-size:13px;line-height:1.6;color:#E2CBA6">Ship every button as a 9-sliced wood plate (no baked text) plus a Roblox TextLabel. Slice insets: 18px all sides at 1x, 36px at 2x. Tokens, barricades and icons export as transparent PNG at 1x/2x. Wood grain lives in one tileable 256px texture reused at three tints.</div>
+      </div>
+      <div style="background:rgba(251,243,226,.07);border-radius:14px;padding:16px 18px;border:1px solid rgba(217,165,102,.25)">
+        <div style="font-weight:800;font-size:13px;margin-bottom:8px;color:#FFD666">Animation timings</div>
+        <div style="font-size:13px;line-height:1.6;color:#E2CBA6">Button hover 80ms ease-out (−2px), press 60ms (+5px), release 100ms. Token active bob 1.6s loop, ±7px. Barricade drop 180ms ease-in with a 40ms 4% squash on landing. Victory panel scale-in 140ms, confetti burst 900ms. Menu transitions fade 120ms + 12px slide.</div>
+      </div>
+      <div style="background:rgba(251,243,226,.07);border-radius:14px;padding:16px 18px;border:1px solid rgba(217,165,102,.25)">
+        <div style="font-weight:800;font-size:13px;margin-bottom:8px;color:#FFD666">Consistency rules</div>
+        <div style="font-size:13px;line-height:1.6;color:#E2CBA6">Light always from above. Top highlight rgba(255,255,255,.4), bottom inset rgba(0,0,0,.18), hard bottom edge in the fill's −30% shade. Radii: 20 panel, 16 button, 12 card, 10 chip, 999 pill. No outlines except the 4px #FFD666 selection ring. Saturation stays below the player colors for every neutral.</div>
+      </div>
+    </div>
+  </div>
+
+  <sc-if value="{{ showSpecSheet }}" hint-placeholder-val="{{ true }}">
+  <!-- ======== 17. COMPONENT SPECS ======== -->
+  <div style="display:flex;flex-direction:column;gap:22px">
+    <div style="display:flex;align-items:baseline;gap:14px;border-bottom:2px solid rgba(217,165,102,.28);padding-bottom:12px">
+      <div style="font-family:Fredoka;font-size:13px;color:#D9A566;letter-spacing:.2em">17</div>
+      <div style="font-family:Fredoka;font-size:26px;color:#FBF3E2">Component spec sheet</div>
+      <div style="margin-left:auto;font-size:13px;color:#B2946E">values at 1080p · scale ×2 for 2x export</div>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:12px;font-size:13px">
+      <div style="background:rgba(251,243,226,.06);border-radius:14px;padding:16px;border:1px solid rgba(217,165,102,.22)">
+        <div style="font-family:Fredoka;font-size:17px;color:#FFD666;margin-bottom:10px">Button</div>
+        <div style="line-height:1.7;color:#E2CBA6"><b style="color:#FBF3E2">Size</b> L 96h / M 72h / S 48h · min width 180<br /><b style="color:#FBF3E2">Padding</b> 20×46 L, 15×32 M, 10×20 S<br /><b style="color:#FBF3E2">Radius</b> 18 / 14 / 11<br /><b style="color:#FBF3E2">Edge</b> 8 / 6 / 4px hard bottom<br /><b style="color:#FBF3E2">Type</b> Fredoka 600, 28/20/15, +6% tracking<br /><b style="color:#FBF3E2">States</b> hover −2px · press +5px · disabled #CFC0A4 / #A08A6A text · selected 4px #FFD666 ring</div>
+      </div>
+      <div style="background:rgba(251,243,226,.06);border-radius:14px;padding:16px;border:1px solid rgba(217,165,102,.22)">
+        <div style="font-family:Fredoka;font-size:17px;color:#FFD666;margin-bottom:10px">Panel &amp; Modal</div>
+        <div style="line-height:1.7;color:#E2CBA6"><b style="color:#FBF3E2">Frame</b> 10px wood/500 border, r=20<br /><b style="color:#FBF3E2">Insert</b> paper/50→200 gradient, r=14<br /><b style="color:#FBF3E2">Padding</b> 22 desktop / 18 mobile<br /><b style="color:#FBF3E2">Shadow</b> 0 10 0 wood/700, 0 18 26 rgba(0,0,0,.35)<br /><b style="color:#FBF3E2">Backdrop</b> rgba(42,26,14,.65)</div>
+      </div>
+      <div style="background:rgba(251,243,226,.06);border-radius:14px;padding:16px;border:1px solid rgba(217,165,102,.22)">
+        <div style="font-family:Fredoka;font-size:17px;color:#FFD666;margin-bottom:10px">PlayerToken</div>
+        <div style="line-height:1.7;color:#E2CBA6"><b style="color:#FBF3E2">Size</b> 96 board · 72 HUD · 48 list<br /><b style="color:#FBF3E2">Rim</b> 7px wood gradient + 4px paper inner ring<br /><b style="color:#FBF3E2">Shape mark</b> circle / diamond / square / triangle at 34% of inner<br /><b style="color:#FBF3E2">States</b> active bob + #FFD666 rim · selected 4px ring · victory crown pip · eliminated grey +✕ at 60%</div>
+      </div>
+      <div style="background:rgba(251,243,226,.06);border-radius:14px;padding:16px;border:1px solid rgba(217,165,102,.22)">
+        <div style="font-family:Fredoka;font-size:17px;color:#FFD666;margin-bottom:10px">Barricade</div>
+        <div style="line-height:1.7;color:#E2CBA6"><b style="color:#FBF3E2">Size</b> 2 cells long × 0.4 cell thick, r=half thickness<br /><b style="color:#FBF3E2">Fill</b> wood/400→600 with grain, 3px top highlight<br /><b style="color:#FBF3E2">Edge</b> 6px wood/700<br /><b style="color:#FBF3E2">Preview</b> 40% opacity · valid green + ✓ · invalid red hatch + ✕, both with 3px paper outline</div>
+      </div>
+      <div style="background:rgba(251,243,226,.06);border-radius:14px;padding:16px;border:1px solid rgba(217,165,102,.22)">
+        <div style="font-family:Fredoka;font-size:17px;color:#FFD666;margin-bottom:10px">PlayerCard</div>
+        <div style="line-height:1.7;color:#E2CBA6"><b style="color:#FBF3E2">Size</b> 380×92 desktop, full-width 80h mobile<br /><b style="color:#FBF3E2">Content</b> avatar 72 · name Fredoka 600/24 · status Nunito 800/18 · wall pill<br /><b style="color:#FBF3E2">Active</b> 4px #FFD666 ring + ▸ prefix + lighter wood fill<br /><b style="color:#FBF3E2">2v2</b> nested paper rows, team label above</div>
+      </div>
+      <div style="background:rgba(251,243,226,.06);border-radius:14px;padding:16px;border:1px solid rgba(217,165,102,.22)">
+        <div style="font-family:Fredoka;font-size:17px;color:#FFD666;margin-bottom:10px">Toggle · Slider · Tab</div>
+        <div style="line-height:1.7;color:#E2CBA6"><b style="color:#FBF3E2">Toggle</b> 58×30 pill, 24 knob, on = green/500<br /><b style="color:#FBF3E2">Slider</b> 16 track, 26 square knob r=9, filled green/500<br /><b style="color:#FBF3E2">Tab</b> 34h, r=9, active wood/500 + 3px edge, inactive 12% wood tint<br /><b style="color:#FBF3E2">Hit area</b> never below 44×44</div>
+      </div>
+      <div style="background:rgba(251,243,226,.06);border-radius:14px;padding:16px;border:1px solid rgba(217,165,102,.22)">
+        <div style="font-family:Fredoka;font-size:17px;color:#FFD666;margin-bottom:10px">Notification · Tooltip · Badge</div>
+        <div style="line-height:1.7;color:#E2CBA6"><b style="color:#FBF3E2">Notification</b> 12 radius, 10×16 padding, icon 16, slide from edge 120ms, dwell 2.4s<br /><b style="color:#FBF3E2">Tooltip</b> paper/50, r=12, max 320w, 10px tail<br /><b style="color:#FBF3E2">Badge</b> pill 999, Nunito 800/18, 5×11 padding</div>
+      </div>
+      <div style="background:rgba(251,243,226,.06);border-radius:14px;padding:16px;border:1px solid rgba(217,165,102,.22)">
+        <div style="font-family:Fredoka;font-size:17px;color:#FFD666;margin-bottom:10px">GameModeCard</div>
+        <div style="line-height:1.7;color:#E2CBA6"><b style="color:#FBF3E2">Size</b> 340×420 desktop, 2-up mobile<br /><b style="color:#FBF3E2">Frame</b> 9px wood, r=20; interior painted fill r=14<br /><b style="color:#FBF3E2">Stack</b> diagram 34h · mode Fredoka 700/42 · name /22 · meta 18 · body 20<br /><b style="color:#FBF3E2">Hover</b> −3px, edge grows 2px</div>
+      </div>
+    </div>
+  </div>
+  </sc-if>
+
+</div>
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;showSpecSheet&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Documentation&quot;}}">class Component extends DCLogic {
+  renderVals() {
+    return {
+      cells: Array.from({ length: 81 }, (_, i) => i),
+      showSpecSheet: this.props.showSpecSheet ?? true
+    };
+  }
+}</script>
+</body>
+</html>

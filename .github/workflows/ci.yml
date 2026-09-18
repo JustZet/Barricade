@@ -1,0 +1,34 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  verificari:
+    name: Verificari si build
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Toolchain (aftman.toml)
+        uses: ok-nick/setup-aftman@v0.4.2
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      # Acelasi fisier pe care il rulezi si local, ca sa nu existe doua definitii
+      # ale lui "curat": stylua, selene, 98 de teste, sourcemap, luau-lsp.
+      - name: Verificari
+        run: lune run tools/check
+
+      - name: Build
+        run: lune run tools/build --rapid
+
+      - name: Pastreaza place-ul construit
+        uses: actions/upload-artifact@v4
+        with:
+          name: Barricade-rbxl
+          path: build/Barricade.rbxl
+          retention-days: 14

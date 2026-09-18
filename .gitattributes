@@ -1,0 +1,5 @@
+# Totul cu LF in repo si in working tree. Altfel Windows scrie CRLF, iar `stylua
+# --check` din CI (Linux) si cel local ajung la verdicte diferite pe acelasi fisier.
+* text=auto eol=lf
+
+*.png binary
