@@ -9,3 +9,4 @@
 
 # Intermediarele generatorului de asseturi; se refac cu `node gen.js`.
 assets/design-system/.work/
+assets/store/.work/

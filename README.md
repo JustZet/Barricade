@@ -193,6 +193,16 @@ git tag v0.1.0 && git push origin v0.1.0
 `.github/workflows/ci.yml` rulează `tools/check` la fiecare push și păstrează
 `Barricade.rbxl` ca artifact, ca să poți descărca orice build de pe orice commit.
 
+Iconița și thumbnail-urile paginii se randează din aceleași token-uri de culoare ca
+restul interfeței, ca să nu existe o a doua paletă care se poate desincroniza:
+
+```bash
+node assets/store/gen-store.js   # → assets/store/out/
+```
+
+Ies `icon-512.png` (dimensiunea cerută de Roblox) și două thumbnail-uri 1920×1080.
+Se încarcă manual în Creator Hub; nu există API pentru ele.
+
 ---
 
 ## Ce mai lipsește înainte de publicare
