@@ -1,9 +1,13 @@
 name: Publicare
 
-# Doua declansatoare: un tag `v1.2.3`, sau butonul "Run workflow" din Actions.
+# DEZARMAT. Declansarea pe tag `v*` e scoasa intentionat: `rojo build` construieste
+# place-ul DOAR din default.project.json, iar mesh-urile 3D (ReplicatedStorage.Assets)
+# traiesc in fisierul place-ului, nu in Rojo — vezi comentariul din
+# src/world/Platform.luau:82. Pana cand Assets intra in proiect si `tools/build`
+# verifica prezenta lui, orice publicare sterge lumea 3D din place-ul live.
+#
+# Ramane doar butonul manual din Actions, ca sa nu plece nimic din reflex.
 on:
-  push:
-    tags: ["v*"]
   workflow_dispatch:
 
 jobs:
