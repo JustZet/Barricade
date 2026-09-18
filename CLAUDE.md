@@ -27,12 +27,36 @@ Rojo merge într-un singur sens: de la fișiere spre Studio.
 | Pe disc | În Studio |
 |---|---|
 | `src/shared/` | `ReplicatedStorage.Shared` |
+| `src/world/` | `ReplicatedStorage.World` |
 | `src/server/` | `ServerScriptService.Server` |
 | `src/client/` | `StarterPlayer.StarterPlayerScripts.Client` |
 
-Interfața se construiește **din cod**, nu din obiecte făcute în Studio. Nu există
-`StarterGui` gestionat manual, deci nu există nimic de pierdut la sincronizare.
-`Remotes` se creează la boot din `Remotes.build()`.
+Interfața 2D se construiește **din cod**, nu din obiecte făcute în Studio. Nu există
+`StarterGui` gestionat manual. `Remotes` se creează la boot din `Remotes.build()`.
+
+## Dar lumea 3D nu e pe disc
+
+Tabelul de mai sus e tot ce știe Rojo. Restul place-ului e construit de mână în Studio
+și **nu există în repo**:
+
+| În place, nu pe disc | ce e |
+|---|---|
+| `ReplicatedStorage.Assets` | `Board`, `Barricades`, `Podiums` — mesh-urile importate |
+| `Workspace` | `Lobby`, `SpawnLocation`, `FreePlayArena`, `shrub` |
+
+`src/world/Platform.luau` o spune la fața locului: *„nu e sincronizat de Rojo: sunt
+mesh-uri importate, care trăiesc în fișierul place-ului"*.
+
+De aici ies două reguli care nu se încalcă:
+
+**Nu publica niciodată rezultatul lui `rojo build`.** Conține tot codul și trece toate
+testele, dar n-are lumea 3D. Publicat peste place-ul real, îl golește. Publicarea se
+face din Studio, cu Ctrl+P.
+
+**Nu presupune că „totul e în cod".** A fost adevărat cât timp jocul era doar 2D, și
+scria așa aici. Cine citește regula veche și publică un build șterge lobby-ul, arena și
+tabla, iar jocul nu dă nicio eroare: `WorldController.isAvailable()` nu găsește
+`Assets.Board` și clientul cade tăcut pe tabla 2D din `BoardView`.
 
 ---
 

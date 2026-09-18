@@ -17,17 +17,12 @@ Dacă cineva ar rămâne fără drum, plasarea e respinsă și baricada nu se co
 ```bash
 aftman install          # unelte: rojo, stylua, selene, luau-lsp, lune
 lune run tests/run      # 98 de teste de reguli, fără Roblox
-lune run tools/build    # verifică tot, apoi scrie build/Barricade.rbxl
-```
-
-Deschide `build/Barricade.rbxl` în Studio și apasă Play. Pentru mai mulți jucători:
-**Test → Clients and Servers → 2 (sau 4) jucători → Start**.
-
-Dezvoltare cu sincronizare live:
-
-```bash
 rojo serve              # apoi „Connect" din plugin-ul Rojo în Studio
 ```
+
+Se lucrează **în place-ul adevărat**, deschis cu *File → Open from Roblox → Barricade*,
+nu într-un fișier construit local. Motivul e în secțiunea următoare. Apasă Play; pentru
+mai mulți jucători, **Test → Clients and Servers → 2 (sau 4) jucători → Start**.
 
 Verificări — toate cinci, într-o singură comandă:
 
@@ -168,40 +163,43 @@ se poate desincroniza de prima.
 
 ---
 
+## Ce trăiește în place, nu pe disc
+
+Rojo aduce în Studio doar ce scrie în `default.project.json`: `Shared`, `World`,
+`Server`, `Client`. Adică **numai cod**.
+
+Lumea 3D e construită de mână în Studio și trăiește în fișierul place-ului:
+
+```
+ReplicatedStorage.Assets        Board, Barricades, Podiums
+Workspace                       Lobby, SpawnLocation, FreePlayArena, shrub
+```
+
+`src/world/Platform.luau` o spune la fața locului: *„nu e sincronizat de Rojo: sunt
+mesh-uri importate, care trăiesc în fișierul place-ului"*.
+
+Consecința, care nu e evidentă și costă scump: **`rojo build` produce un place fără
+lumea 3D.** Nu e stricat — conține tot codul și trece toate testele — dar îi lipsește
+tot ce n-a fost pus pe disc. Publicat peste place-ul real, îl golește.
+
+Iar golirea nu se vede ca o eroare. `WorldController.isAvailable()` verifică dacă
+există `Assets.Board`, nu îl găsește, și clientul cade tăcut pe tabla 2D din
+`BoardView`. Jocul pornește, merge, se joacă — doar că în 2D.
+
 ## Publicare
 
-Place-ul se urcă prin Open Cloud, nu din Studio, ca să plece mereu ceva care a trecut
-verificările:
+Din Studio, cu **Ctrl+P**. Atât.
 
-```bash
-export ROBLOX_API_KEY=...        # Creator Hub → Open Cloud → API Keys
-export ROBLOX_UNIVERSE_ID=...    # din URL-ul experienței
-export ROBLOX_PLACE_ID=...       # place-ul de start
+Rojo ține codul sincronizat în place-ul deschis, tu publici din Studio, iar ce e
+construit de mână rămâne neatins pentru că nimic nu se reconstruiește.
 
-lune run tools/build
-lune run tools/publish
-```
+Nu există publicare din CI, intenționat. `.github/workflows/ci.yml` rulează
+`tools/check` la fiecare push și construiește un place ca verificare că proiectul Rojo
+e valid — artifactul acela e **numai cod** și nu trebuie publicat niciodată.
 
-Cheia nu se scrie niciodată într-un fișier din repo. Pe GitHub stă în **Settings →
-Secrets and variables → Actions**, sub aceleași trei nume, iar workflow-ul
-`.github/workflows/publish.yml` urcă singur la fiecare tag `v*`:
-
-```bash
-git tag v0.1.0 && git push origin v0.1.0
-```
-
-`.github/workflows/ci.yml` rulează `tools/check` la fiecare push și păstrează
-`Barricade.rbxl` ca artifact, ca să poți descărca orice build de pe orice commit.
-
-Iconița și thumbnail-urile paginii se randează din aceleași token-uri de culoare ca
-restul interfeței, ca să nu existe o a doua paletă care se poate desincroniza:
-
-```bash
-node assets/store/gen-store.js   # → assets/store/out/
-```
-
-Ies `icon-512.png` (dimensiunea cerută de Roblox) și două thumbnail-uri 1920×1080.
-Se încarcă manual în Creator Hub; nu există API pentru ele.
+Dacă vreodată vrei publicare automată, condiția e ca `Assets` și conținutul
+`Workspace` să intre în repo ca fișiere `.rbxm` legate din `default.project.json`.
+Până atunci, orice publicare care nu pleacă din Studio șterge lumea.
 
 ---
 

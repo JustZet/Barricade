@@ -1,13 +1,18 @@
 --!nolint
 --[[
-	Construieste place-ul gata de urcat:
+	Construieste place-ul din proiectul Rojo:
 
 		lune run tools/build            verifica tot, apoi construieste
 		lune run tools/build --rapid    doar construieste (CI a verificat deja)
 
-	Iese `build/Barricade.rbxl` — binar, nu XML, pentru ca asta urca Open Cloud.
-	Fara `--rapid` nu se construieste nimic daca verificarile pica, tocmai ca sa
-	nu poti urca din greseala un build cu teste cazute.
+	NU PUBLICA REZULTATUL. E o verificare ca proiectul Rojo e valid si ca tot codul
+	intra intr-un DataModel — nimic mai mult. Rojo construieste doar ce scrie in
+	default.project.json, adica numai cod, iar lumea 3D (ReplicatedStorage.Assets si
+	continutul Workspace) traieste in fisierul place-ului. Urcat peste place-ul real,
+	build-ul asta il goleste, si o face tacut: WorldController.isAvailable() nu mai
+	gaseste Assets.Board si clientul cade pe tabla 2D.
+
+	Publicarea se face din Studio, cu Ctrl+P. Vezi README, sectiunea "Publicare".
 ]]
 
 local fs = require("@lune/fs")

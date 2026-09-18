@@ -29,6 +29,7 @@ jobs:
       - name: Pastreaza place-ul construit
         uses: actions/upload-artifact@v5
         with:
-          name: Barricade-rbxl
+          name: Barricade-rbxl-doar-cod
           path: build/Barricade.rbxl
+          # Numai cod: fara lumea 3D din place. A nu se publica.
           retention-days: 14
