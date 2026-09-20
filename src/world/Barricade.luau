@@ -17,8 +17,12 @@
 
 local Debris = game:GetService("Debris")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local SoundService = game:GetService("SoundService")
 local TweenService = game:GetService("TweenService")
 
+local GameConfig = require(ReplicatedStorage.Shared.GameConfig)
+
+local Audio = require(script.Parent.Audio)
 local Hover = require(script.Parent.Hover)
 local ModelFit = require(script.Parent.ModelFit)
 local Skins = require(script.Parent.Skins)
@@ -251,6 +255,19 @@ end
 function Barricade.setPreview(self: Barricade, state: PreviewState)
 	self.State = state
 
+	--[[
+		Starea se scrie si pe model, ca atribut.
+
+		Unele skinuri isi poarta miscarea in ele — `portal` si `thunder` au
+		fiecare un script care le invarte si le aprinde, chiar in modelul din
+		`ReplicatedStorage.Assets`. Scripturile alea coloreaza aceleasi piese pe
+		care le coloreaza si verdictul de mai jos, iar daca ar merge mai departe
+		peste el, fantoma ar clipi intre verde si fulger. Atributul le spune sa
+		se dea la o parte: cat e previzualizare, culoarea zidului e un raspuns,
+		nu un efect.
+	]]
+	self.Model:SetAttribute("Preview", state ~= "PLACED")
+
 	for _, piece in ipairs(self.Model:GetDescendants()) do
 		if not piece:IsA("BasePart") then
 			continue
@@ -336,7 +353,12 @@ function Barricade.rejectAndVanish(self: Barricade)
 	Debris:AddItem(self.Model, 0.45)
 end
 
--- Sunetul iese din corpul zidului, ca sa se auda din directia lui.
+--[[
+	Sunetul iese din corpul zidului, ca sa se auda din directia lui.
+
+	Dar raza in care se aude intreg se intinde cat tot cadrul: ascultatorul e
+	camera, iar camera sta sus, departe de tabla. Vezi `GameConfig.WorldSound`.
+]]
 function Barricade.playSound(self: Barricade, assetId: number)
 	if assetId == 0 then
 		return
@@ -347,11 +369,26 @@ function Barricade.playSound(self: Barricade, assetId: number)
 	end
 	local sound = Instance.new("Sound")
 	sound.SoundId = "rbxassetid://" .. assetId
+	sound.Volume = GameConfig.WorldSound.Volume
+	sound.RollOffMode = Enum.RollOffMode.Inverse
+	sound.RollOffMinDistance = GameConfig.WorldSound.FullRange
+	sound.RollOffMaxDistance = GameConfig.WorldSound.FadeRange
+
+	--[[
+		Prin grup, ca sa poata fi taiat de butonul de sunet al fiecaruia. Daca
+		grupul lipseste — un test care porneste doar lumea, fara server — sunetul
+		merge mai departe fara el.
+	]]
+	local group = SoundService:FindFirstChild(GameConfig.WorldSound.Group)
+	if group and group:IsA("SoundGroup") then
+		sound.SoundGroup = group
+	end
+
 	sound.Parent = anchor
 	sound.Ended:Connect(function()
 		sound:Destroy()
 	end)
-	sound:Play()
+	Audio.play(sound)
 end
 
 function Barricade.destroy(self: Barricade)

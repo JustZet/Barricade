@@ -281,6 +281,19 @@ local function finishIfOver(self: Match): boolean
 
 	self.Finished = true
 	self:broadcast()
+
+	--[[
+		Ceremonia vine dupa ultima replicare, nu inaintea ei.
+
+		`broadcast` aseaza intai avatarele pe celulele din starea finala; abia
+		apoi are sens sa iasa soclul de sub castigator, chiar din patratul pe
+		care a castigat. Invers, soclul ar fi urcat de sub un jucator pe care
+		sincronizarea urma sa-l mai mute o data.
+	]]
+	if self.Arena then
+		self.Arena:celebrate(self.State.Winner)
+	end
+
 	self:sendEvent({
 		Type = "Victory",
 		Winner = self.State.Winner,

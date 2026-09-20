@@ -18,6 +18,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Shared = ReplicatedStorage.Shared
 local Remotes = require(Shared.Remotes)
 local Catalog = require(Shared.Catalog)
+local GameConfig = require(Shared.GameConfig)
 
 -- Canalele trebuie sa existe inainte ca vreun client sa le ceara.
 Remotes.build()
@@ -68,10 +69,35 @@ end
 ]]
 local Wallet = require(script.Services.Wallet)
 local Inventory = require(script.Services.Inventory)
+local Loadout = require(script.Services.Loadout)
 
 do
 	Wallet.start()
 	Inventory.start()
+	--[[
+		Alegerea porneste dupa inventar, pentru ca il intreaba pe el cand cineva
+		echipeaza. Ce se incarca din DataStore nu asteapta inventarul — vezi
+		`Loadout.restore` din `src/shared/`, care spune de ce.
+	]]
+	Loadout.start()
+end
+
+--[[
+	Grupul de sunete al lumii.
+
+	Se face aici, pe server, ca sa existe unul singur si sa ajunga la toti:
+	sunetele zidurilor intra in el, iar fiecare client ii poate da volumul la
+	zero cand isi inchide sunetul. Facut pe client, ar fi fost doi cu acelasi
+	nume si nu s-ar fi stiut care e al cui.
+]]
+do
+	local SoundService = game:GetService("SoundService")
+	if not SoundService:FindFirstChild(GameConfig.WorldSound.Group) then
+		local group = Instance.new("SoundGroup")
+		group.Name = GameConfig.WorldSound.Group
+		group.Volume = 1
+		group.Parent = SoundService
+	end
 end
 
 -- --------------------------------------------------------------- cereri
@@ -207,7 +233,49 @@ Remotes.get("RequestPurchase").OnServerEvent
 		end
 
 		Inventory.grant(player, { key })
+
+		--[[
+			Ce tocmai ai cumparat se si imbraca.
+
+			Nimeni nu da o mie de banuti pe un podium ca sa-l lase in raft. Pana
+			acum urma o a doua apasare, pe alt buton, care nu intreba nimic si nu
+			putea fi refuzata — adica un pas care nu hotara nimic. Cine vrea
+			altceva schimba oricand din magazin, unde scrie negru pe alb ce poarta.
+
+			Echiparea vine dupa `grant`, nu inaintea lui: `Loadout` intreaba
+			inventarul daca obiectul e al jucatorului, si inainte de `grant`
+			raspunsul ar fi fost „nu".
+		]]
+		Loadout.equip(player, item.Kind, item.Id)
 	end)
+
+--[[
+	Echiparea.
+
+	Tot ce vine de la client e felul si id-ul. Daca obiectul e al lui se afla
+	din inventar, pe server — acelasi drum ca la cumparare, si din acelasi
+	motiv: "il am" spus de client nu inseamna nimic.
+
+	Reusita nu se confirma pe un canal. Serverul scrie atributul, iar clientul
+	vede schimbarea odata cu toti ceilalti; ce se trimite inapoi e doar refuzul,
+	fiindca el nu se vede nicaieri altundeva.
+]]
+Remotes.get("RequestEquip").OnServerEvent:Connect(function(player: Player, kind: any, itemId: any)
+	if not RateLimiter.consume(player, "RequestEquip") then
+		return
+	end
+
+	local item = Catalog.resolve(kind, itemId)
+	if not item then
+		Remotes.get("ActionRejected"):FireClient(player, "BAD_REQUEST")
+		return
+	end
+
+	local equipped, reason = Loadout.equip(player, item.Kind, item.Id)
+	if not equipped then
+		Remotes.get("ActionRejected"):FireClient(player, "EQUIP_" .. (reason or "REFUSED"))
+	end
+end)
 
 -- ------------------------------------------------------- intrari si iesiri
 

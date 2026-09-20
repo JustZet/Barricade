@@ -635,6 +635,25 @@ describe("Configurarea modurilor", function()
 			assertEqual(#mode.TurnOrder, mode.Players, modeId .. ": ordine de tura")
 		end
 	end)
+
+	--[[
+		Ceremonia de la final e facuta din trei numere care se conditioneaza, si
+		niciunul nu stie de celelalte: soclul urca, panoul apare dupa el, panoul
+		pleaca singur, iar masa trebuie sa tina pana atunci. Reglat unul singur,
+		jucatorul ajunge in lobby cu ecranul de victorie inca peste ochi — si
+		nimic nu s-ar plange, fiindca fiecare numar in parte e valid.
+	]]
+	it("masa tine cat toata ceremonia de la final", function()
+		local timing = GameConfig.Timing
+		assertTrue(
+			timing.VictoryHold >= timing.VictoryReveal + timing.VictoryAutoLeave,
+			"VictoryHold acopera dezvaluirea si plecarea singura"
+		)
+		assertTrue(
+			timing.VictoryReveal > timing.PodiumRise,
+			"panoul apare dupa ce soclul s-a oprit din urcat"
+		)
+	end)
 end)
 
 -- ------------------------------------------------------------ deconectari
@@ -986,6 +1005,113 @@ describe("Catalogul de obiecte", function()
 				if not item.Default then
 					assertTrue(item.Coins > 0, kind .. "/" .. item.Id .. " are pret")
 				end
+			end
+		end
+	end)
+end)
+
+--[[
+	Ce porti din ce ai.
+
+	Aceleasi functii le ruleaza si serverul inainte sa scrie atributul, si
+	magazinul cand isi deseneaza butonul. Testele sunt singurul loc in care cele
+	doua folosinte se intalnesc.
+]]
+describe("Echiparea obiectelor", function()
+	local Catalog = Shared.Catalog
+	local Loadout = Shared.Loadout
+
+	local function ownedSet(kind: any, id: string): any
+		return { [Catalog.key(kind, id)] = true }
+	end
+
+	it("numeste atributele pe fel, nu pe obiect", function()
+		local wall = Loadout.attribute("Barricade")
+		local podium = Loadout.attribute("Podium")
+		assertTrue(wall ~= podium, "doua feluri, doua atribute")
+		assertEqual(Loadout.attribute("Barricade"), wall, "acelasi nume de fiecare data")
+	end)
+
+	it("porneste cu obiectele de start, la fiecare fel", function()
+		local set = Loadout.defaults()
+		for _, kind in Catalog.Kinds do
+			assertEqual(set[kind], Catalog.default(kind), kind .. ": obiectul de start")
+		end
+	end)
+
+	it("obiectul de start se echipeaza si fara inventar", function()
+		assertTrue(
+			Loadout.canEquip(nil, "Barricade", Catalog.default("Barricade")),
+			"start fara salvare"
+		)
+	end)
+
+	it("nu se echipeaza ce nu e cumparat", function()
+		local ok, reason = Loadout.canEquip({}, "Barricade", "dragon")
+		assertFalse(ok, "nedetinut")
+		assertEqual(reason, "LOCKED", "motivul")
+	end)
+
+	it("nu se echipeaza un id inventat", function()
+		local ok, reason = Loadout.canEquip(nil, "Barricade", "nuexista")
+		assertFalse(ok, "articol inexistent")
+		assertEqual(reason, "UNKNOWN", "motivul")
+	end)
+
+	--[[
+		Cheia de inventar poarta felul, deci si echiparea trebuie sa-l poarte:
+		altfel baricada `dragon` cumparata ar imbraca si podiumul `dragon`.
+	]]
+	it("cumparat intr-un fel nu se poate echipa in celalalt", function()
+		local owned = ownedSet("Barricade", "dragon")
+		assertTrue(Loadout.canEquip(owned, "Barricade", "dragon"), "baricada cumparata")
+		assertFalse(Loadout.canEquip(owned, "Podium", "dragon"), "podiumul nu vine la pachet")
+	end)
+
+	it("ce nu se poate purta cade pe obiectul de start", function()
+		assertEqual(
+			Loadout.sanitize({}, "Barricade", "dragon"),
+			Catalog.default("Barricade"),
+			"nedetinut"
+		)
+		assertEqual(
+			Loadout.sanitize(nil, "Podium", "nuexista"),
+			Catalog.default("Podium"),
+			"id inventat"
+		)
+		assertEqual(
+			Loadout.sanitize(nil, "Podium", 7),
+			Catalog.default("Podium"),
+			"id care nu e text"
+		)
+		assertEqual(
+			Loadout.sanitize(ownedSet("Podium", "dragon"), "Podium", "dragon"),
+			"dragon",
+			"detinut, deci ramane"
+		)
+	end)
+
+	--[[
+		Ce vine din salvare se verifica altfel: doar ca obiectul exista, nu si ca
+		e detinut. Inventarul si alegerea se citesc pe doua fire, si cine ajunge
+		al doilea n-are voie sa dezbrace pe nimeni — vezi comentariul din
+		`Loadout.restore`.
+	]]
+	it("salvarea se crede pe cuvant despre ce detine", function()
+		local set = Loadout.restore({ Barricade = "dragon", Podium = "portal" })
+		assertEqual(set.Barricade, "dragon", "baricada salvata")
+		assertEqual(set.Podium, "portal", "podiumul salvat")
+	end)
+
+	it("salvarea stricata se intoarce la obiectele de start", function()
+		-- Fara salvare deloc, cu una care nu e tabela, si cu una care poarta un
+		-- id retras din catalog: toate trei dau acelasi lucru.
+		local broken: { any } = { Loadout.restore(nil), { Barricade = "nuexista" }, "text", 7 }
+
+		for _, saved in broken do
+			local set = Loadout.restore(saved)
+			for _, kind in Catalog.Kinds do
+				assertEqual(set[kind], Catalog.default(kind), kind .. ": cade pe start")
 			end
 		end
 	end)

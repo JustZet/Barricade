@@ -204,6 +204,23 @@ Theme.Assets = {
 		panelInventory = "rbxassetid://102908059679583",
 		panelStore = "rbxassetid://101453348280483",
 
+		--[[
+			Cele doua desene ale vitrinelor din lobby, pentru cand te apropii de
+			un obiect expus si poti sa-l cumperi de pe loc.
+
+			`tagShowcase` (378x122) e placuta de departe: o singura scobitura, de
+			la 31 la 347 pe latime si de la 19 la 98 pe inaltime, in care incap
+			numele si pretul.
+
+			`panelShowcase` (504x660) e cartonasul de aproape, si are patru zone,
+			masurate in PNG ca tot ce tine de magazin: panglica de sus, pe care
+			se scrie numele; caseta mare de previzualizare, x 63..440 si y
+			117..425; scobitura pretului, y 429..501; si locul butonului, y
+			505..621. Cine inlocuieste desenul remasoara.
+		]]
+		panelShowcase = "rbxassetid://118214082767745",
+		tagShowcase = "rbxassetid://127772374130648",
+
 		tabLeft = "rbxassetid://129864566402657",
 		tabActive = "rbxassetid://80178996348534",
 		tabRight = "rbxassetid://123936255646466",

@@ -60,11 +60,44 @@ tabla, iar jocul nu dă nicio eroare: `WorldController.isAvailable()` nu găseș
 
 ---
 
+## Efectele skinurilor stau în model
+
+Fiecare skin animat — `portal`, `thunder`, `energy`, `dragon`, `crystal` — are în
+model un `Script` numit `Effects`, cu `RunContext = Client`. Mișcarea e o însușire a
+obiectului, nu a locului: același model e clonat de server pentru zidul din meci, de
+client pentru vitrina din lobby și pentru fantoma de sub cursor, iar efectul pornește în
+toate trei fără ca vreunul să știe de el. Nimic nu se replică — fiecare client își
+animă singur copia.
+
+Aceleași cinci scripturi stau și pe socluri, fiindcă piesele poartă acolo aceleași
+nume; ce lipsește se sare. Copiile lor de pe disc sunt în `assets/world-scripts/`.
+**Place-ul e adevărul**, copia e ce repui dacă modelul se importă din nou și scriptul
+pleacă odată cu el.
+
+Trei reguli ies din felul în care rulează:
+
+- **Numai în `Workspace`.** Un script cu `RunContext = Client` pornește și pe
+  modelul-sursă din `ReplicatedStorage.Assets` — și acolo scrie lumini și emițătoare
+  **în sursă**, pe care fiecare clonă de după le moștenește, adunate una peste alta.
+  De aceea fiecare începe cu `if not model:IsDescendantOf(workspace) then return end`.
+- **Piesele se caută în adâncime.** Zidurile își țin piesele una lângă alta, dar
+  soclurile le îmbracă într-un model interior (`podium_thunder`…). O căutare doar pe
+  primul nivel găsește tot pe zid și nimic pe soclu, iar scriptul iese tăcut.
+- **Nimic nu se colorează cât ține previzualizarea.** `Barricade.setPreview` ridică
+  atributul `Preview`; verdictul verde/roșu are întâietate, altfel clipește „se poate"
+  peste „nu se poate".
+
+Ce se mișcă se ține minte **față de o piesă care nu se mișcă**, nu în coordonatele
+lumii: zidul cade pe tablă, urmează cursorul, se leagănă în vitrină — iar o flacără
+ținută minte unde era la pornire ar rămâne în urmă, singură, în mijlocul arenei.
+
+---
+
 ## Înainte de orice commit
 
 ```bash
 stylua src/ tests/ tools/    # formatează
-lune run tools/check         # cele cinci verificări, inclusiv 98/98 teste
+lune run tools/check         # cele cinci verificări, inclusiv 108/108 teste
 ```
 
 `tools/check` rulează `stylua --check`, `selene`, testele, `rojo sourcemap` și

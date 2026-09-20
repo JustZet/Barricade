@@ -16,7 +16,7 @@ Dacă cineva ar rămâne fără drum, plasarea e respinsă și baricada nu se co
 
 ```bash
 aftman install          # unelte: rojo, stylua, selene, luau-lsp, lune
-lune run tests/run      # 98 de teste de reguli, fără Roblox
+lune run tests/run      # 108 de teste de reguli, fără Roblox
 rojo serve              # apoi „Connect" din plugin-ul Rojo în Studio
 ```
 
@@ -35,7 +35,7 @@ la primul pic, ca să vezi tot ce e stricat dintr-o trecere, și iese cu cod `1`
 se plânge. CI rulează exact acest fișier, deci „trece local” și „trece pe GitHub” nu pot
 să se despartă.
 
-Toate trec curat: **0 erori de tip, 0 avertismente de lint, 98/98 teste**.
+Toate trec curat: **0 erori de tip, 0 avertismente de lint, 108/108 teste**.
 
 ---
 
@@ -63,6 +63,8 @@ src/shared/          motorul — pur, testabil, comun clientului și serverului
   BoardState         starea + cele două acțiuni care o schimbă
   Rewards            câți bănuți face un meci, câștigat sau pierdut
   FreePlayRules      când pleacă meciul pornit de pe soclu
+  Catalog            ce se poate deține: id-uri, prețuri, obiectele de start
+  Loadout            cu ce joci din ce ai: verificarea și numele atributelor
   Remotes            numele canalelor de rețea
 
 src/server/          autoritatea
@@ -73,6 +75,8 @@ src/server/          autoritatea
   Managers/FreePlay        soclul din arenă: cine așteaptă, când pleacă meciul
   Services/RateLimiter     token bucket per jucător și canal
   Services/Wallet          bănuții: sold, câștig, cheltuială, DataStore
+  Services/Inventory       ce deține fiecare jucător, DataStore
+  Services/Loadout         ce poartă din ce deține, ca atribut pe Player
 
 src/client/          desenul
   init.client        ecranul, camera fixă, pornirea
@@ -80,14 +84,18 @@ src/client/          desenul
   Controllers/AnimationController politica de mișcare
   Controllers/SoundController     sunetele
   Controllers/InputController     R / Escape / M
+  Controllers/ShowcaseController  cumpărarea de la vitrinele din lobby
   UI/Theme           paleta, fontul, constructorul declarativ
   UI/BoardView       tabla: celule, baricade, pioni, previzualizare
   UI/HudView         carduri, tura, butoane, contor, setări
   UI/LobbyView       meniu, coadă, numărătoare
   UI/VictoryView     ecranul de final
   UI/WalletView      bănuții, la mijlocul marginii din stânga
+  UI/StoreView       magazinul: rafturile, cumpărarea și echiparea
+  UI/OfferView       eticheta plutitoare de deasupra unei vitrine
+  UI/ItemWell        caseta în care se vede un obiect, aceeași peste tot
 
-tests/               harness lune + 98 de teste de reguli
+tests/               harness lune + 108 de teste de reguli
 ```
 
 ---

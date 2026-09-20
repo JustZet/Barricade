@@ -5,6 +5,19 @@
 	Cardurile jucatorilor, indicatorul de tura, butoanele de actiune,
 	contorul de baricade si mesajele scurte. Si aici, zero reguli: primeste
 	stare, deseneaza, anunta apasarile prin callback.
+
+	**Tot ce se vede aici sta intr-un colt al ecranului, nu peste tabla.** HUD-ul
+	nu e o fereastra, ci patru gramezi lipite de marginile ecranului: randul de
+	sus, cardurile sub el, butoanele jos si setarile in dreapta jos. Marimea lor
+	e in pixeli, fiindca placile de lemn sunt desene cu proportii fixe — si de
+	aceea, pe un ecran mic, raman la fel de mari in timp ce tabla se micsoreaza,
+	pana ajung sa o acopere. Exact asta se intampla pe telefon: cardurile de sus
+	mancau primele randuri de celule, si nu mai aveai pe ce sa apesi.
+
+	`fit` e raspunsul: aceleasi gramezi, micsorate cu totul cat sa lase tabla
+	descoperita. Nu se rearanjeaza nimic si nu exista o a doua asezare „de
+	telefon" — ar fi fost inca un ecran de intretinut, care s-ar fi despartit de
+	asta la prima modificare.
 ]]
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -22,6 +35,57 @@ local HudView = {}
 HudView.__index = HudView
 
 --[[
+	Ecranul pentru care e desenat HUD-ul, si cat de mic are voie sa ajunga.
+
+	1280x720 e masura la care cardurile de 240 pe 100 si butoanele de 46 arata
+	cum au fost desenate. Sub ea totul se micsoreaza proportional; peste ea nu se
+	mareste, fiindca un card cat palma pe un monitor lat nu ajuta pe nimeni.
+
+	Pragul de jos nu e ales din frumusete, ci din citit: sub el numele
+	jucatorilor si cifrele ceasului ajung sub sapte pixeli si nu se mai disting.
+	Mai bine un HUD care acopera putin decat unul care nu spune nimic.
+]]
+local DESIGN_W, DESIGN_H = 1280, 720
+local MIN_SCALE = 0.55
+
+--[[
+	Randul de sus: doar contorul de ture, si cat mai subtire.
+
+	Aici statea si numele jocului, cu litere de 22. Nu mai sta: in timpul unui
+	meci nu-l citeste nimeni, iar randul lui impingea cardurile cu 56 de pixeli
+	peste tabla — adica peste primul rand de celule, chiar cel pe care pionii se
+	misca cel mai des. Numele jocului se vede oricum in lobby, inainte sa intri.
+
+	Ce a ramas e o dunga de 22 de pixeli chiar de la marginea de sus a ecranului,
+	cat sa incapa "TURN 3 · 1v1", si sub ea cardurile — mai sus de atat nu se
+	poate.
+]]
+local TOP_BAR_H = 22
+
+local BOTTOM_MARGIN, BOTTOM_BAR_H, BOTTOM_BAR_W = 16, 70, 460
+local SETTINGS_W = 150
+
+--[[
+	Cardul, si golul dintre doua carduri.
+
+	Stau aici, nu langa desen, pentru ca `fit` are nevoie de ele: latimea
+	randului de carduri depinde de cati jucatori sunt, si un rand de patru pe un
+	ecran ingust trebuie sa incapa chiar daca pentru asta trebuie coborat sub
+	pragul de citit. Un card iesit de pe ecran nu se citeste deloc.
+]]
+local CARD_W, CARD_H, CARD_GAP = 240, 100, 10
+
+--[[
+	Cat de mic are voie sa ajunga un buton.
+
+	Degetul nu se micsoreaza odata cu ecranul. La 0.78, „MOVE" ramane inalt de
+	36 de pixeli, aproape de cei 44 pe care ii cere orice indrumar de atins cu
+	degetul, si mult peste cei 25 la care ar ajunge daca s-ar micsora cat
+	cardurile. Pragul cade doar cand butoanele chiar n-au loc unele langa altele.
+]]
+local TOUCH_FLOOR = 0.78
+
+--[[
 	Campurile sunt declarate, nu deduse. Altfel Luau nu stie in `update` ce e
 	`self.Toast` si trateaza fiecare element ca pe un `Instance` gol.
 ]]
@@ -32,6 +96,17 @@ type HudFields = {
 	Root: Frame,
 	TurnCounter: TextLabel,
 	PlayersPanel: Frame,
+	--[[
+		Micsorarile, in doua grupe.
+
+		`Scales` sunt gramezile care se citesc — cardurile, banda de tura,
+		mesajul scurt — si care se pot face mici cat le lasa cititul.
+		`TouchScales` sunt cele care se apasa, si care se micsoreaza mai putin.
+		Inauntrul fiecarei grupe valoarea e aceeasi pentru toti: doua carduri la
+		doua marimi ar arata ca doua interfete suprapuse.
+	]]
+	Scales: { UIScale },
+	TouchScales: { UIScale },
 	MoveButton: TextButton,
 	WallButton: TextButton,
 	RotateButton: TextButton,
@@ -43,6 +118,19 @@ type HudFields = {
 }
 
 export type HudView = typeof(setmetatable({} :: HudFields, HudView))
+
+--[[
+	Micsorarea unei gramezi.
+
+	`UIScale` scade deodata marimea cutiei, pozitiile dinauntru si marimea
+	textului, iar scaderea se face in jurul punctului de ancorare. De aceea
+	gramada ramane lipita de marginea ei: cardurile raman centrate sus, butoanele
+	centrate jos, setarile in coltul din dreapta jos. Pus pe ecranul intreg, ar
+	fi mutat tocmai marginile alea spre mijloc.
+]]
+local function shrinkable(container: Instance): UIScale
+	return Theme.create("UIScale", { Scale = 1, Parent = container }) :: UIScale
+end
 
 local function slotColor(state: BoardState, slot: number): Color3
 	local perMode = GameConfig.TeamColors[state.GameMode]
@@ -67,41 +155,37 @@ function HudView.new(parent: Instance): HudView
 	self.Root = root
 
 	-- ------------------------------------------------------------ bara de sus
+	--[[
+		Randul de sus e singurul care se intinde pe toata latimea, deci nu se
+		micsoreaza ca celelalte: ce sta in el e lipit de mijloc, iar mijlocul nu
+		se muta, oricat de lat ar fi ecranul. Sta la pixelul zero, in dunga pe
+		care bara Roblox o lasa libera intre butoanele ei si lista de jucatori.
+	]]
 	local topBar = Theme.create("Frame", {
 		Name = "TopBar",
 		BackgroundTransparency = 1,
-		Size = UDim2.new(1, 0, 0, 56),
+		Size = UDim2.new(1, 0, 0, TOP_BAR_H),
 		Parent = root,
-	}, { Theme.padding(16) }) :: Frame
+	}) :: Frame
 
 	--[[
-		Titlul sta la mijlocul barii de sus, nu in coltul din stanga.
+		Contorul de ture sta la mijloc, nu in coltul din dreapta.
 
-		Coltul acela nu e al nostru: butonul de meniu si bula de chat ale
-		Roblox-ului se aseaza peste el pe orice ecran, si taiau primele litere.
-		La mijloc e liber, iar titlul cade deasupra cardurilor, care sunt si ele
-		centrate — deci cele doua randuri se aliniaza intre ele.
+		Colturile de sus nu sunt ale noastre: in stanga Roblox pune meniul, chatul
+		si microfonul, iar in dreapta lista de jucatori — exact peste ea cadea
+		contorul, si se citea pe jumatate. La mijloc e singura bucata de rand pe
+		care n-o cere nimeni, si cade oricum chiar deasupra cardurilor, care sunt
+		si ele centrate.
 	]]
-	Theme.text({
-		Name = "Title",
-		Text = "BARRICADE",
-		Font = Theme.Font.Bold,
-		TextSize = 22,
-		TextXAlignment = Enum.TextXAlignment.Center,
-		AnchorPoint = Vector2.new(0.5, 0),
-		Position = UDim2.fromScale(0.5, 0),
-		Size = UDim2.fromScale(0.4, 1),
-		Parent = topBar,
-	})
-
 	self.TurnCounter = Theme.text({
 		Name = "TurnCounter",
 		Text = "",
 		TextColor3 = Theme.Color.TextMuted,
-		TextXAlignment = Enum.TextXAlignment.Right,
-		AnchorPoint = Vector2.new(1, 0),
-		Position = UDim2.fromScale(1, 0),
-		Size = UDim2.fromScale(0.4, 1),
+		TextSize = 14,
+		TextXAlignment = Enum.TextXAlignment.Center,
+		AnchorPoint = Vector2.new(0.5, 0),
+		Position = UDim2.fromScale(0.5, 0),
+		Size = UDim2.fromScale(0.6, 1),
 		Parent = topBar,
 	})
 
@@ -117,29 +201,32 @@ function HudView.new(parent: Instance): HudView
 		Name = "PlayersPanel",
 		BackgroundTransparency = 1,
 		AnchorPoint = Vector2.new(0.5, 0),
-		Position = UDim2.new(0.5, 0, 0, 56),
-		Size = UDim2.fromOffset(980, 100),
+		Position = UDim2.new(0.5, 0, 0, TOP_BAR_H),
+		Size = UDim2.fromOffset(980, CARD_H),
 		Parent = root,
 	}, {
 		Theme.create("UIListLayout", {
 			FillDirection = Enum.FillDirection.Horizontal,
 			HorizontalAlignment = Enum.HorizontalAlignment.Center,
 			VerticalAlignment = Enum.VerticalAlignment.Center,
-			Padding = UDim.new(0, 10),
+			Padding = UDim.new(0, CARD_GAP),
 			SortOrder = Enum.SortOrder.LayoutOrder,
 		}),
 	}) :: Frame
 	self.PlayersPanel = playersPanel
+	self.Scales = { shrinkable(playersPanel) }
+	self.TouchScales = {}
 
 	-- ------------------------------------------------------------- bara de jos
 	local bottomBar = Theme.create("Frame", {
 		Name = "BottomBar",
 		BackgroundTransparency = 1,
 		AnchorPoint = Vector2.new(0.5, 1),
-		Position = UDim2.new(0.5, 0, 1, -16),
-		Size = UDim2.fromOffset(460, 70),
+		Position = UDim2.new(0.5, 0, 1, -BOTTOM_MARGIN),
+		Size = UDim2.fromOffset(BOTTOM_BAR_W, BOTTOM_BAR_H),
 		Parent = root,
 	}) :: Frame
+	table.insert(self.TouchScales, shrinkable(bottomBar))
 
 	local actions = Theme.create("Frame", {
 		Name = "Actions",
@@ -194,6 +281,7 @@ function HudView.new(parent: Instance): HudView
 		Size = UDim2.fromOffset(500, 34),
 		Parent = root,
 	})
+	table.insert(self.Scales, shrinkable(self.TurnBanner))
 
 	-- Mesajele de refuz: apar scurt, langa butoane, si dispar singure.
 	self.Toast = Theme.text({
@@ -208,14 +296,15 @@ function HudView.new(parent: Instance): HudView
 		Size = UDim2.fromOffset(520, 22),
 		Parent = root,
 	})
+	table.insert(self.Scales, shrinkable(self.Toast))
 
 	-- ------------------------------------------------------------- setari
 	local settings = Theme.create("Frame", {
 		Name = "Settings",
 		BackgroundTransparency = 1,
 		AnchorPoint = Vector2.new(1, 1),
-		Position = UDim2.new(1, -16, 1, -16),
-		Size = UDim2.fromOffset(150, 114),
+		Position = UDim2.new(1, -BOTTOM_MARGIN, 1, -BOTTOM_MARGIN),
+		Size = UDim2.fromOffset(SETTINGS_W, 114),
 		Parent = root,
 	}, {
 		Theme.create("UIListLayout", {
@@ -223,6 +312,7 @@ function HudView.new(parent: Instance): HudView
 			HorizontalAlignment = Enum.HorizontalAlignment.Right,
 		}),
 	}) :: Frame
+	table.insert(self.TouchScales, shrinkable(settings))
 
 	self.SoundButton = Theme.button({
 		Name = "SoundButton",
@@ -305,7 +395,100 @@ function HudView.new(parent: Instance): HudView
 		end
 	end)
 
+	self:fit()
+
+	--[[
+		Ecranul se poate schimba in timpul meciului: telefonul se roteste,
+		fereastra Studio se trage de colt. HUD-ul se remasoara atunci, nu doar la
+		pornire.
+	]]
+	local camera = workspace.CurrentCamera
+	if camera then
+		camera:GetPropertyChangedSignal("ViewportSize"):Connect(function()
+			self:fit()
+		end)
+	end
+
 	return self
+end
+
+--[[
+	Incadreaza HUD-ul in ecranul de acum.
+
+	Doua lucruri deodata, si amandoua tin de acelasi rau — HUD-ul acopera tabla
+	pe ecran mic:
+
+	1. Gramezile se micsoreaza cu totul, proportional, pana la pragul de sub care
+	   textul nu se mai citeste. Un card de 240 de pixeli pe un telefon de 812
+	   acoperea un sfert din latime si primele doua randuri de celule.
+	2. Butoanele se micsoreaza mai putin. Un card se citeste, un buton se apasa,
+	   iar degetul nu se face mai mic odata cu ecranul: sub `TOUCH_FLOOR`,
+	   „MOVE" ar ajunge o dunga de un centimetru pe care o ratezi. Ele coboara
+	   sub prag doar cand chiar nu mai au loc unele langa altele.
+
+	Randul de sus si cardurile nu apar aici deloc, si merita spus de ce.
+	Pozitia lor e fixa, pusa o data la constructie: incep de la pixelul zero al
+	ecranului. Interfata e desenata peste tot ecranul
+	(`IgnoreGuiInset`), iar bara Roblox nu ocupa tot randul de sus, ci doar
+	capetele lui — in stanga meniul, chatul si microfonul, in dreapta lista de
+	jucatori. Mijlocul ramane liber, si acolo stau si contorul, si cardurile,
+	amandoua centrate. Coborate cu inaltimea barii, cum erau, lasau deasupra o
+	dunga goala cat un rand de celule, si pentru nimic: pe sub ea nu trecea
+	nimeni.
+
+	Restul gramezilor sunt lipite de marginile ecranului, si nici acolo nu e
+	nimic de socotit.
+]]
+function HudView.fit(self: HudView)
+	local camera = workspace.CurrentCamera
+	if not camera then
+		return
+	end
+
+	local viewport = camera.ViewportSize
+	if viewport.X <= 0 or viewport.Y <= 0 then
+		return
+	end
+
+	local wanted = math.clamp(math.min(viewport.X / DESIGN_W, viewport.Y / DESIGN_H), MIN_SCALE, 1)
+
+	--[[
+		Randul de carduri nu are voie sa iasa din ecran, nici sub pragul de citit.
+
+		Patru carduri fac 990 de pixeli; pe un telefon tinut in picioare nu incap
+		nici micsorate cat le lasa cititul. Dintre doua rele, textul mic e mai
+		bun decat un jucator ramas peste marginea ecranului, pe care nu-l vezi
+		deloc — de aceea limita asta bate pragul, singura care face asta.
+	]]
+	local count = 0
+	for _ in self.Cards do
+		count += 1
+	end
+	local row = if count > 0 then count * CARD_W + (count - 1) * CARD_GAP else CARD_W
+	local scale = math.min(wanted, (viewport.X - BOTTOM_MARGIN * 2) / row)
+
+	for _, shrink in self.Scales do
+		shrink.Scale = scale
+	end
+
+	--[[
+		Cat de departe poate ajunge coltul cu setarile de mijlocul ecranului
+		inainte sa intre peste butoanele de actiune. Jumatate din bara de jos,
+		plus coloana din dreapta, plus doua margini.
+	]]
+	local room = (viewport.X / 2 - BOTTOM_MARGIN * 2) / (BOTTOM_BAR_W / 2 + SETTINGS_W)
+	local touch = math.min(math.max(scale, TOUCH_FLOOR), room, 1)
+	for _, shrink in self.TouchScales do
+		shrink.Scale = touch
+	end
+
+	--[[
+		Banda de tura si mesajul scurt stau deasupra butoanelor, deci urmeaza
+		inaltimea lor, nu micsorarea cardurilor.
+	]]
+	local aboveButtons = BOTTOM_MARGIN + BOTTOM_BAR_H * touch
+	self.TurnBanner.Position = UDim2.new(0.5, 0, 1, -(aboveButtons + 8 * scale))
+	self.Toast.Position = UDim2.new(0.5, 0, 1, -(aboveButtons + 44 * scale))
 end
 
 function HudView.setCallbacks(self: HudView, callbacks: { [string]: any })
@@ -313,6 +496,10 @@ function HudView.setCallbacks(self: HudView, callbacks: { [string]: any })
 end
 
 function HudView.setVisible(self: HudView, visible: boolean)
+	-- Ecranul se putea schimba cat timp meciul nu era pe el.
+	if visible then
+		self:fit()
+	end
 	self.Root.Visible = visible
 end
 
@@ -334,7 +521,7 @@ local function buildCard(state: BoardState, slot: number, parent: Instance): Fra
 	local card = Theme.create("Frame", {
 		Name = "Card_" .. slot,
 		BackgroundTransparency = 1,
-		Size = UDim2.fromOffset(240, 100),
+		Size = UDim2.fromOffset(CARD_W, CARD_H),
 		LayoutOrder = slot,
 		Parent = parent,
 	}) :: Frame
@@ -508,6 +695,13 @@ function HudView.buildCards(self: HudView, state: BoardState)
 	for _, slot in state.TurnOrder do
 		self.Cards[slot] = buildCard(state, slot, self.PlayersPanel)
 	end
+
+	--[[
+		Cate carduri sunt hotaraste cat de lat e randul, iar randul hotaraste cat
+		de mic trebuie sa se faca. Doi jucatori si patru nu se incadreaza la fel,
+		deci masuratoarea se reface la fiecare meci nou, nu doar la pornire.
+	]]
+	self:fit()
 end
 
 -- ----------------------------------------------------------------- update

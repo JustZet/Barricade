@@ -18,12 +18,16 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Shared = ReplicatedStorage.Shared
 local BoardState = require(Shared.BoardState)
+local Catalog = require(Shared.Catalog)
+local GameConfig = require(Shared.GameConfig)
+local Loadout = require(Shared.Loadout)
 local MovementRules = require(Shared.MovementRules)
 local Remotes = require(Shared.Remotes)
 local Types = require(Shared.Types)
 local WallRules = require(Shared.WallRules)
 
 local SoundController = require(script.Parent.SoundController)
+local Pocket = require(script.Parent.Parent.Pocket)
 local InputController = require(script.Parent.InputController)
 
 type BoardState = Types.BoardState
@@ -53,6 +57,11 @@ local REJECTION_TEXT: { [string]: string } = {
 	PURCHASE_POOR = "You do not have enough coins.",
 	PURCHASE_NOT_FOR_SALE = "That item is not for sale yet.",
 	PURCHASE_REFUSED = "Purchase refused.",
+	-- La fel si la echipare: butonul e stins peste ce nu se poate, deci pana
+	-- aici ajunge doar un client care a cerut ceva ce nu vedea pe ecran.
+	EQUIP_UNKNOWN = "That item does not exist.",
+	EQUIP_LOCKED = "You do not own that yet.",
+	EQUIP_REFUSED = "Could not equip that.",
 }
 
 local GameController = {}
@@ -71,6 +80,13 @@ type ControllerFields = {
 	Orientation: string,
 	Hovered: { X: number, Y: number }?,
 	MatchSignature: string?,
+	--[[
+		Ecranul de victorie e programat, dar inca nu a aparut.
+
+		Cat timp e adevarat, starile care mai vin nu il deschid mai devreme: ar
+		sari peste ceremonia pe care tocmai o asteapta.
+	]]
+	VictoryPending: boolean,
 }
 
 export type GameController = typeof(setmetatable({} :: ControllerFields, GameController))
@@ -85,6 +101,7 @@ function GameController.new(views: { [string]: any }): GameController
 	self.Orientation = "Horizontal"
 	self.Hovered = nil :: { X: number, Y: number }?
 	self.MatchSignature = nil :: string?
+	self.VictoryPending = false
 
 	self:wireViews()
 	self:wireRemotes()
@@ -152,6 +169,15 @@ function GameController.wireViews(self: GameController)
 	if views.Store then
 		views.Store:on("onPurchase", function(kind: string, itemId: string)
 			Remotes.get("RequestPurchase"):FireServer(kind, itemId)
+		end)
+
+		--[[
+			Echiparea pleaca la fel: o cerere, nimic aplicat local. Ce porti se
+			afla inapoi din atributul pe care il scrie serverul, nu din faptul ca
+			ai apasat.
+		]]
+		views.Store:on("onEquip", function(kind: string, itemId: string)
+			Remotes.get("RequestEquip"):FireServer(kind, itemId)
 		end)
 	end
 
@@ -235,11 +261,17 @@ function GameController.wireRemotes(self: GameController)
 	local store = self.Views.Store
 	if wallet or store then
 		local first = true
-		Remotes.get("WalletUpdate").OnClientEvent:Connect(function(payload: any)
-			local coins = if typeof(payload) == "table" then payload.Coins else nil
-			if type(coins) ~= "number" then
+		Pocket.watch(function()
+			--[[
+				Cat timp serverul n-a spus nimic, nu se arata nimic: zero inainte
+				de primul mesaj si zero dupa el arata la fel pe ecran, dar numai
+				al doilea e un raspuns.
+			]]
+			if not Pocket.known() then
 				return
 			end
+
+			local coins = Pocket.coins()
 			if wallet then
 				wallet:set(coins, not first)
 			end
@@ -253,13 +285,24 @@ function GameController.wireRemotes(self: GameController)
 	end
 
 	if store then
-		Remotes.get("InventoryUpdate").OnClientEvent:Connect(function(payload: any)
-			local items = if typeof(payload) == "table" then payload.Items else nil
-			if typeof(items) ~= "table" then
-				return
-			end
-			store:setOwned(items)
+		Pocket.watch(function()
+			store:setOwned(Pocket.items())
 		end)
+
+		--[[
+			Ce poarta jucatorul nu vine pe un canal, ci ca atribut pe el — vezi
+			`Loadout`. Se citeste o data acum, pentru cazul in care serverul l-a
+			scris inainte ca ecranul sa existe, si apoi la fiecare schimbare.
+		]]
+		for _, kind: Catalog.Kind in Catalog.Kinds do
+			local name = Loadout.attribute(kind)
+			local function read()
+				local id = LOCAL_PLAYER:GetAttribute(name)
+				store:setEquipped(kind, if typeof(id) == "string" then id else nil)
+			end
+			LOCAL_PLAYER:GetAttributeChangedSignal(name):Connect(read)
+			read()
+		end
 	end
 end
 
@@ -322,8 +365,31 @@ function GameController.onState(self: GameController, snapshot)
 		views.Board:reset()
 	end
 
+	--[[
+		Ecranul de victorie asteapta ceremonia.
+
+		Panoul sta la mijlocul ecranului, iar camera tocmai pleaca spre
+		castigatorul care urca pe soclu — adica fix acolo. Aparut in aceeasi
+		clipa, ar acoperi singurul lucru pe care il are de aratat finalul de
+		meci. Asa se vede intai ce s-a intamplat, si abia apoi ce scrie despre
+		ce s-a intamplat.
+
+		Doar in lumea 3D. Pe tabla 2D nu exista nici camera, nici soclu: acolo
+		o intarziere ar fi o secunda de ecran gol, fara nimic in ea.
+	]]
 	if state.Status == "FINISHED" then
-		views.Victory:show(state, self.LocalSlot)
+		if views.World and not self.VictoryPending and not views.Victory:isOpen() then
+			self.VictoryPending = true
+			task.delay(GameConfig.Timing.VictoryReveal, function()
+				self.VictoryPending = false
+				local now = self.State
+				if now and now.Status == "FINISHED" then
+					views.Victory:show(now, self.LocalSlot)
+				end
+			end)
+		elseif not self.VictoryPending then
+			views.Victory:show(state, self.LocalSlot)
+		end
 	else
 		views.Victory:hide()
 	end
@@ -513,7 +579,7 @@ function GameController.onRejected(self: GameController, reason: string)
 		end
 	end
 
-	self.Views.Hud:showToast(message or reason or "Actiune refuzata.")
+	self.Views.Hud:showToast(message or reason or "That move was refused.")
 	self.Views.Board:flashInvalid()
 	SoundController.play("WallInvalid")
 end

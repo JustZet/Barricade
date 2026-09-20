@@ -25,6 +25,7 @@ local UserInputService = game:GetService("UserInputService")
 local Shared = ReplicatedStorage.Shared
 local BoardState = require(Shared.BoardState)
 local GameConfig = require(Shared.GameConfig)
+local Loadout = require(Shared.Loadout)
 local MovementRules = require(Shared.MovementRules)
 local Remotes = require(Shared.Remotes)
 local WallRules = require(Shared.WallRules)
@@ -33,11 +34,23 @@ local Types = require(Shared.Types)
 local World = ReplicatedStorage:WaitForChild("World")
 local Barricade = require(World.Barricade)
 local Platform = require(World.Platform)
-local Skins = require(World.Skins)
 
 type BoardState = Types.BoardState
 
 local LOCAL_PLAYER = Players.LocalPlayer
+
+--[[
+	Baricada echipata de jucatorul de la tastatura.
+
+	Se citeste din atributul scris de server — `Loadout` spune de ce sta acolo si
+	nu pe un canal al lui. `nil` inseamna ca serverul inca n-a apucat sa-l scrie,
+	iar `Barricade` cade atunci pe skinul de start; peste o clipa fantoma se
+	reface oricum cu ce trebuie.
+]]
+local function equippedWall(): string?
+	local id = LOCAL_PLAYER:GetAttribute(Loadout.attribute("Barricade"))
+	return if typeof(id) == "string" then id else nil
+end
 
 local WorldController = {}
 WorldController.__index = WorldController
@@ -46,10 +59,13 @@ type ControllerFields = {
 	Platform: Platform.Platform?,
 	State: BoardState?,
 	Slot: number?,
-	Mode: "MOVE" | "WALL",
+	-- "IDLE" inseamna ca nu e tura ta: nimic de pe tabla nu raspunde.
+	Mode: "MOVE" | "WALL" | "IDLE",
 	Orientation: "Horizontal" | "Vertical",
 	Connections: { RBXScriptConnection },
 	CellConnections: { RBXScriptConnection },
+	-- Cand a plecat ultima cerere de zid, ca o apasare sa nu trimita doua.
+	LastWallRequest: number,
 	-- Fantoma care urmareste cursorul in modul de baricada. E locala: nu o vede
 	-- nimeni altcineva, pentru ca nu s-a asezat nimic inca.
 	Ghost: Barricade.Barricade?,
@@ -67,6 +83,15 @@ type ControllerFields = {
 	]]
 	Pitch: number?,
 	CameraMove: RBXScriptConnection?,
+	--[[
+		A plecat deja camera spre castigator?
+
+		Starea finala vine de mai multe ori — la fluierul final, si la orice
+		altceva mai trimite serverul dupa el — iar plecarea are voie sa se
+		intample o singura data. Repornita, ar sari inapoi la pozitia de deasupra
+		mesei si ar lua-o de la capat.
+	]]
+	Celebrating: boolean,
 }
 
 export type WorldController = typeof(setmetatable({} :: ControllerFields, WorldController))
@@ -187,11 +212,13 @@ end
 function WorldController.new(): WorldController
 	local self = setmetatable({}, WorldController) :: WorldController
 
-	self.Mode = "MOVE"
+	self.Mode = "IDLE"
 	self.Orientation = "Horizontal"
 	self.TopDown = false
+	self.Celebrating = false
 	self.Connections = {}
 	self.CellConnections = {}
+	self.LastWallRequest = 0
 
 	table.insert(
 		self.Connections,
@@ -226,6 +253,19 @@ function WorldController.new(): WorldController
 		end)
 	)
 	self:bindArena()
+
+	--[[
+		Skinul echipat se schimba din magazin, adica din alta parte a ecranului.
+		Fantoma de sub cursor trebuie sa arate obiectul cu care chiar cazi, deci
+		se arunca si se reface cand alegerea se schimba.
+	]]
+	table.insert(
+		self.Connections,
+		LOCAL_PLAYER:GetAttributeChangedSignal(Loadout.attribute("Barricade")):Connect(function()
+			self:dropGhost()
+			self:updateHover()
+		end)
+	)
 
 	table.insert(
 		self.Connections,
@@ -457,6 +497,90 @@ function WorldController.aimCamera(self: WorldController, animate: boolean?)
 	end)
 end
 
+--[[
+	Cadrul castigatorului: din fata lui, putin de sus.
+
+	Se priveste dinspre directia in care se uita el, nu dintr-un unghi ales de
+	noi: avatarul sta intors spre obiectivul pe care tocmai l-a atins, iar o
+	camera asezata oriunde altundeva l-ar arata din spate sau din profil la
+	finalul propriului meci.
+
+	Se recalculeaza la fiecare cadru, si de aceea primeste corpul, nu o pozitie:
+	castigatorul urca in clipele alea pe soclul care iese din celula, iar un
+	cadru socotit o singura data ar ramane sa priveasca locul in care era.
+	Cat timp corpul inca nu a ajuns la client, se priveste celula — tot acolo va
+	fi si el.
+]]
+local function winnerFrame(character: Model?, cell: Vector3): CFrame
+	local root = if character then character:FindFirstChild("HumanoidRootPart") else nil
+	local body = if root and root:IsA("BasePart") then root else nil
+
+	local focus = if body then body.Position else cell + Vector3.new(0, 3, 0)
+	local look = if body then body.CFrame.LookVector else Vector3.new(0, 0, 1)
+
+	-- Doar directia din plan: inclinarea cadrului o da inaltimea, nu capul lui.
+	local flat = Vector3.new(look.X, 0, look.Z)
+	flat = if flat.Magnitude > 0.01 then flat.Unit else Vector3.new(0, 0, 1)
+
+	local eye = focus
+		+ flat * GameConfig.Camera.WinnerDistance
+		+ Vector3.new(0, GameConfig.Camera.WinnerHeight, 0)
+	return CFrame.lookAt(eye, focus)
+end
+
+--[[
+	Camera pleaca de unde e catre castigator, si ramane pe el.
+
+	Miscarea se interpoleaza intre `CFrame`-uri, si aici chiar asta se vrea —
+	spre deosebire de schimbarea de perspectiva, unde camera trebuie sa ramana pe
+	un arc in jurul mesei. Nu se reasaza aceeasi imagine, ci se pleaca din ea:
+	un drum drept de deasupra tablei pana in fata omului care a castigat.
+
+	Firul nu se opreste la capatul drumului. Tinta se muta in continuare — soclul
+	inca urca — si camera trebuie sa urce cu ea; se stinge abia cand masa se
+	desprinde, din `stopCameraMove`.
+]]
+function WorldController.followWinner(self: WorldController, slot: number?)
+	local platform, state = self.Platform, self.State
+	local camera = workspace.CurrentCamera
+	if not (platform and state and slot and camera) then
+		return
+	end
+
+	local playerState = state.Players[slot]
+	if not playerState then
+		return
+	end
+
+	local cell = platform:cellTop(playerState.Position.X, playerState.Position.Y)
+	if not cell then
+		return
+	end
+
+	local winner = Players:GetPlayerByUserId(playerState.UserId)
+
+	self:stopCameraMove()
+	camera.CameraType = Enum.CameraType.Scriptable
+	camera.CameraSubject = nil
+
+	local from = camera.CFrame
+	local began = os.clock()
+	local seconds = GameConfig.Camera.WinnerSeconds
+
+	self.CameraMove = RunService.RenderStepped:Connect(function()
+		local live = workspace.CurrentCamera
+		if not live then
+			self:stopCameraMove()
+			return
+		end
+
+		local progress = math.clamp((os.clock() - began) / seconds, 0, 1)
+		local eased =
+			TweenService:GetValue(progress, Enum.EasingStyle.Quint, Enum.EasingDirection.Out)
+		live.CFrame = from:Lerp(winnerFrame(if winner then winner.Character else nil, cell), eased)
+	end)
+end
+
 -- Leaga controllerul de tabla meciului curent, sau il desprinde la final.
 function WorldController.bindArena(self: WorldController)
 	for _, connection in self.CellConnections do
@@ -464,6 +588,8 @@ function WorldController.bindArena(self: WorldController)
 	end
 	self.CellConnections = {}
 	self.Platform = nil
+	-- Masa noua, ceremonie noua: urmatorul meci are voie sa se termine si el.
+	self.Celebrating = false
 
 	local arenaId = LOCAL_PLAYER:GetAttribute("ArenaId")
 	if typeof(arenaId) ~= "string" then
@@ -548,6 +674,16 @@ function WorldController.onState(self: WorldController, snapshot: any)
 	self:paintGoal()
 	self:refresh()
 	self:updateHover()
+
+	--[[
+		Fluierul final muta camera de pe masa pe om. O singura data: starea
+		finala mai vine de cateva ori dupa ea, iar o a doua plecare ar smuci
+		imaginea inapoi de unde a inceput.
+	]]
+	if state.Status == "FINISHED" and not self.Celebrating then
+		self.Celebrating = true
+		self:followWinner(state.Winner)
+	end
 end
 
 -- Culoarea unui slot, aceeasi care leaga pionul de cardul din interfata.
@@ -708,7 +844,7 @@ function WorldController.updateHover(self: WorldController)
 		self.Ghost = Barricade.new(
 			platform,
 			{ X = bestX, Y = bestY, Orientation = self.Orientation },
-			Skins.Default
+			equippedWall()
 		)
 	end
 
@@ -751,7 +887,19 @@ function WorldController.setInteraction(
 	legalCells: { { X: number, Y: number } },
 	orientation: string
 )
-	self.Mode = if mode == "WALL" then "WALL" else "MOVE"
+	--[[
+		`IDLE` e un mod in sine, nu o mutare fara evidentieri.
+
+		Pana acum orice nu era "WALL" ajungea "MOVE", deci cand nu era tura ta
+		lumea tinea minte ca esti in mutare si primea in continuare clicuri pe
+		celule. Iar clicul pe celula se incheie la **ridicarea** degetului: pui un
+		zid, tura trece la celalalt, si tocmai ridicarea aceleiasi apasari trimite
+		o mutare care nu mai are cum sa fie primita. De acolo venea sunetul de
+		refuz la fiecare zid pus, desi zidul se punea.
+
+		Cine nu e la rand nu apasa nimic. Asta spune `IDLE`.
+	]]
+	self.Mode = if mode == "WALL" then "WALL" elseif mode == "IDLE" then "IDLE" else "MOVE"
 	self.Orientation = if orientation == "Vertical" then "Vertical" else "Horizontal"
 
 	local platform = self.Platform
@@ -767,7 +915,7 @@ function WorldController.setInteraction(
 		nimic. Unde cade zidul si daca e primit se vede oricum din fantoma de sub
 		cursor, care e un raspuns exact, nu o harta.
 	]]
-	if self.Mode == "MOVE" and mode ~= "IDLE" then
+	if self.Mode == "MOVE" then
 		platform:showLegalCells(legalCells)
 	else
 		platform:clearHighlights()
@@ -786,9 +934,20 @@ function WorldController.toggleView(self: WorldController): boolean
 	return self.TopDown
 end
 
--- Skinul cu care iti cazi zidurile. Serverul il citeste la asezare.
-function WorldController.setSkin(_self: WorldController, skinId: string)
-	LOCAL_PLAYER:SetAttribute("WallSkin", Skins.get(skinId).Id)
+--[[
+	Fantoma se reface cu skinul de acum.
+
+	Nu se recoloreaza: un skin e un model intreg, nu o culoare. Stearsa aici, se
+	construieste din nou la prima miscare de mouse, cu obiectul nou — si numai
+	daca jucatorul chiar e in modul de baricada.
+]]
+function WorldController.dropGhost(self: WorldController)
+	local ghost = self.Ghost
+	if not ghost then
+		return
+	end
+	self.Ghost = nil
+	ghost:destroy()
 end
 
 --[[
@@ -824,9 +983,29 @@ end
 	tii cursorul. O raza si saizeci si patru de comparatii — mai ieftin decat
 	cadrul pe care il pierdeai oricum.
 ]]
+--[[
+	Cat de aproape pot veni doua apasari fara sa fie considerate una singura.
+
+	O apasare trebuie sa trimita o singura cerere. Pe unele ecrane aceeasi
+	atingere ajunge de doua ori — o data ca `Touch`, o data ca `MouseButton1`,
+	fiindca motorul o traduce si in mouse — iar a doua cerere ajunge la server
+	dupa ce prima a mutat tura, deci e refuzata. Asta e refuzul care se auzea la
+	fiecare zid pus, desi zidul se punea.
+
+	O zecime de secunda si ceva e sub ce poate apasa un om de doua ori si mult
+	peste distanta dintre cele doua fete ale aceleiasi atingeri. Oricum, intr-o
+	tura nu se poate pune decat un zid.
+]]
+local PRESS_GAP = 0.2
+
 function WorldController.placeWall(self: WorldController)
 	local state = self.State
 	if not state or state.Status ~= "PLAYING" then
+		return
+	end
+
+	local now = os.clock()
+	if now - self.LastWallRequest < PRESS_GAP then
 		return
 	end
 
@@ -836,6 +1015,8 @@ function WorldController.placeWall(self: WorldController)
 	if not hover then
 		return
 	end
+
+	self.LastWallRequest = now
 	Remotes.get("RequestPlaceWall"):FireServer(hover.X, hover.Y, hover.Orientation)
 end
 

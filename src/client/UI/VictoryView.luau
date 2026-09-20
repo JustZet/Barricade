@@ -27,7 +27,7 @@ VictoryView.__index = VictoryView
 	calculator nu trebuie sa gaseasca la intoarcere aceeasi fereastra peste o
 	tabla moarta. Tacerea inseamna "gata", deci se pleaca in lobby.
 ]]
-local AUTO_LEAVE_SECONDS = 5
+local AUTO_LEAVE_SECONDS = GameConfig.Timing.VictoryAutoLeave
 
 type VictoryFields = {
 	Callbacks: { [string]: any },
@@ -302,6 +302,16 @@ function VictoryView.show(self: VictoryView, state: BoardState, localSlot: numbe
 	)
 
 	self:startTimeout()
+end
+
+--[[
+	E deschis acum?
+
+	`GameController` intreaba inainte sa programeze deschiderea intarziata de la
+	finalul meciului: daca panoul e deja pe ecran, nu mai are ce sa astepte.
+]]
+function VictoryView.isOpen(self: VictoryView): boolean
+	return self.Root.Visible
 end
 
 function VictoryView.hide(self: VictoryView)

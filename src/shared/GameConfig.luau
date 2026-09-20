@@ -147,12 +147,53 @@ GameConfig.Timing = {
 	--[[
 		Cat ramane masa in lume dupa fluierul final, in secunde.
 
-		Nu zero: castigatorul are dreptul sa vada tabla pe care a castigat. Dar
-		nici la nesfarsit — pana acum masa ramanea pana cand *toti* apasau
-		"Leave", iar cine inchidea ecranul de victorie fara sa apese ramanea
-		intepenit pe o platforma din care nu-l mai scotea nimeni.
+		Nu zero: castigatorul are dreptul sa vada tabla pe care a castigat, si
+		soclul care iese din ea sub el. Dar nici la nesfarsit — pana acum masa
+		ramanea pana cand *toti* apasau "Leave", iar cine inchidea ecranul de
+		victorie fara sa apese ramanea intepenit pe o platforma din care nu-l mai
+		scotea nimeni.
+
+		Trebuie sa acopere toata ceremonia plus rasfoirea panoului de la final:
+		`VictoryReveal + VictoryAutoLeave`. Mai scurt, masa s-ar darama sub un
+		jucator care inca se uita la ea. Cat tine masa tin si artificiile.
 	]]
-	VictoryHold = 6,
+	VictoryHold = 20,
+	--[[
+		Cat dureaza urcarea soclului de sub castigator, in secunde.
+
+		E inceputul ceremoniei, nu toata: soclul iese repede din celula si apoi
+		ramane acolo, cu omul pe el, cat spune `VictoryReveal`. Mai scurta ar
+		parea o teleportare, mai lunga ar tine imaginea in loc chiar in clipa in
+		care jucatorul vrea sa vada ce a castigat.
+	]]
+	PodiumRise = 1.2,
+	--[[
+		Cat asteapta ecranul de victorie dupa fluierul final, in lumea 3D.
+
+		E timpul in care se vede doar ce s-a intamplat: camera ajunge in fata
+		castigatorului in `Camera.WinnerSeconds`, soclul iese din celula in
+		`PodiumRise`, si raman vreo cinci secunde bune in care el sta pe podium,
+		cu artificii deasupra, si nimic nu-i acopera fata. Panoul vine dupa.
+
+		Numarul asta e singurul de reglat daca sarbatoarea pare scurta sau lunga
+		— dar creste-l impreuna cu `VictoryHold`, altfel masa se darama sub el.
+		Pe tabla 2D nu exista nici camera, nici soclu, si panoul apare imediat.
+	]]
+	VictoryReveal = 7,
+	--[[
+		Dupa cate secunde pleaca singur ecranul de victorie in lobby.
+
+		Ecranul de final nu e o intrebare care asteapta raspuns: meciul s-a
+		terminat oricum. Cine vrea revansa o cere in secundele alea; cine s-a
+		ridicat de la calculator nu trebuie sa gaseasca la intoarcere aceeasi
+		fereastra peste o tabla moarta.
+
+		Sta langa `VictoryHold` fiindca cele doua se conditioneaza: masa trebuie
+		sa tina pana pleaca panoul, adica `VictoryReveal + VictoryAutoLeave`
+		trebuie sa incapa in `VictoryHold`. Altfel jucatorul e trimis in lobby cu
+		ecranul de victorie inca deschis peste el.
+	]]
+	VictoryAutoLeave = 8,
 }
 
 --[[
@@ -198,6 +239,39 @@ GameConfig.Camera = {
 		o taietura; peste trei sferturi, butonul VIEW incepe sa para lenes.
 	]]
 	ViewSeconds = 0.55,
+
+	--[[
+		Cadrul castigatorului, la finalul meciului.
+
+		Camera pleaca de deasupra mesei si coboara in fata celui care a castigat,
+		cat urca soclul sub el. Distanta si inaltimea sunt alese ca sa se vada
+		omul, nu tabla: de la paisprezece studi si cinci inaltime intra in cadru
+		avatarul intreg si soclul de sub el, fara ca linia orizontului sa fie
+		chiar in spatele capului.
+
+		Drumul dureaza ceva mai mult decat o schimbare de perspectiva. Nu e o
+		reasezare a aceleiasi imagini, ci o plecare din ea, si are voie sa se
+		simta ca atare — dar tot trebuie sa se termine inainte ca jucatorul sa
+		caute butonul de revansa.
+	]]
+	WinnerDistance = 14,
+	--[[
+		Inaltimea camerei de final, si de ce tocmai atat.
+
+		Masurat in meci: un zid urca 7,2 studi peste fata tablei, iar trunchiul
+		jucatorului sta la 2,2. Camera priveste trunchiul de la distanta
+		`WinnerDistance`, deci linia dintre ele urca uniform de la om spre camera.
+		La cinci studi inaltime, linia aia ramane sub varful zidurilor pe toata
+		lungimea ei — adica orice zid de pe drum taie cadrul, si asta se si vedea:
+		un turn de piatra peste tot ecranul.
+
+		La zece, ochiul sta la 12,2 peste tabla, bine peste ziduri, iar linia
+		trece pe deasupra oricarui zid aflat mai departe de vreo patru studi de
+		castigator. Mai sus de-atat, cadrul devine o vedere de sus si se pierde
+		omul din el.
+	]]
+	WinnerHeight = 10,
+	WinnerSeconds = 1.6,
 }
 
 --[[
@@ -276,6 +350,12 @@ GameConfig.RateLimits = {
 		un client care ar incerca sa prinda aceeasi cumparatura de doua ori.
 	]]
 	RequestPurchase = { Interval = 1.0, Burst = 2 },
+	--[[
+		Echiparea e ieftina — se scrie un atribut — dar tot atinge inventarul si
+		ajunge la toti jucatorii din server. Patru pe doua secunde acopera pe
+		cineva care isi incearca skinurile pe rand, si taie bucla.
+	]]
+	RequestEquip = { Interval = 0.5, Burst = 4 },
 }
 
 --[[
@@ -283,12 +363,115 @@ GameConfig.RateLimits = {
 	SoundController il ignora fara sa arunce eroare.
 ]]
 GameConfig.Sounds = {
-	Move = 0,
+	-- „ui-simple-button-click": scurt si sec, cat sa se auda ca pionul a ajuns.
+	Move = 88442833509532,
 	WallPlaced = 0,
-	WallInvalid = 0,
+	-- „bass.wav": bufnitura surda de la Roblox, pentru mutarea refuzata.
+	WallInvalid = 12221944,
 	TurnChange = 0,
-	Victory = 0,
+	-- „victory.wav", sunetul vechi de la Roblox.
+	Victory = 12222253,
 	Countdown = 0,
 } :: { [string]: number }
+
+--[[
+	Cat de des poate un sunet sa o ia de la capat, in secunde.
+
+	Refuzul e singurul care se cere in rafala: apesi de cinci ori la rand pe un
+	rost in care zidul nu intra, si serverul raspunde de cinci ori. Un sunet
+	repornit la fiecare apasare se aude ca o bataie in usa, nu ca un raspuns —
+	si fiindca e acelasi obiect `Sound`, nici macar nu apuca sa se termine o
+	data. O jumatate de secunda e cat tine partea folositoare din el.
+
+	Ce nu apare aici nu are pauza: mutarea, tura si victoria vin oricum rar.
+]]
+GameConfig.SoundCooldown = {
+	WallInvalid = 0.45,
+} :: { [string]: number }
+
+--[[
+	Cat de tare suna fiecare, intre 0 si 1. Ce nu apare aici merge cu 0.45.
+
+	Mutarea si refuzul sunt raspunsuri la ce tocmai ai apasat, si trebuie auzite
+	ca atare; restul sunt intamplari ale meciului si pot sta mai in spate.
+]]
+--[[
+	Cat se sare de la inceputul fiecarui sunet, in secunde, dupa id-ul lui.
+
+	Multe fisiere incep cu o zecime-doua de liniste sau de scartait inainte de
+	lovitura. Sunetul porneste la timp, dar se **aude** tarziu, si la un zid care
+	cade in 0,18 secunde asta se simte ca o intarziere.
+
+	Cat de mult se sare se afla ascultand, nu socotind: pornesti sunetul cu
+	cateva valori la rand si te opresti la prima care incepe direct cu lovitura.
+	Peste ea, se taie din atac si sunetul devine subtire.
+
+	Valorile de aici sunt **masurate**, nu ghicite: fiecare fisier a fost trecut
+	printr-un `AudioAnalyzer` si s-a citit de unde incepe semnalul. Din zece
+	sunete, trei aveau liniste in fata; celelalte sapte pornesc din primul cadru
+	si nu apar aici.
+]]
+GameConfig.SoundStart = {
+	-- lemn: liniste pana la 200 ms, lovitura la 233
+	[9120796401] = 0.19,
+	-- fulger: liniste pana la 420 ms, descarcarea la 450
+	[92090867642655] = 0.41,
+	--[[
+		copac: incepe pe la 165 ms, dar nu are lovitura — creste incet, si abia
+		pe la 800 de milisecunde ajunge unde e mai tare. Sarim pana unde incepe,
+		atat cat sa nu porneasca din nimic; restul tine de fisier, nu de cod.
+	]]
+	[87388390529602] = 0.15,
+	--[[
+		Ultimele doua au sub cinci milisecunde de liniste in fata — sub o
+		miime de secunda masurabila cu rigla noastra, care citeste o data pe
+		cadru. Cu ele sarite, sunetul e prezent din **primul** cadru in loc de al
+		doilea, si nu se pierde nimic: la cinci milisecunde amandoua sunt deja la
+		varful lor. Mai mult de-atat n-are rost, fiindca dincolo de un cadru
+		nimeni n-are cum sa auda diferenta.
+	]]
+	-- piatra
+	[9125869504] = 0.005,
+	-- refuzul
+	[12221944] = 0.005,
+} :: { [number]: number }
+
+GameConfig.SoundVolume = {
+	Move = 0.85,
+	WallInvalid = 0.75,
+} :: { [string]: number }
+
+--[[
+	Sunetele care ies din lume, nu din interfata: zidul cand se aseaza, zidul
+	cand e respins.
+
+	Un sunet legat de o piesa e un sunet 3D, iar ascultatorul e camera. Camera
+	insa sta sus, deasupra tablei, la vreo saizeci-optzeci de studi — si cu raza
+	implicita de zece studi a motorului, zidul pus in capatul celalalt se auzea
+	de sase-sapte ori mai incet decat ar fi trebuit. Nu era prea incet sunetul,
+	era prea departe ascultatorul.
+
+	`FullRange` e raza in care se aude intreg: o intindem cat tot cadrul, deci
+	oriunde pe tabla zidul suna la fel de tare. Abia dincolo de ea scade, si
+	asta ramane bun pentru vitrinele din lobby, care chiar sunt departe.
+
+	Numarul nu e ghicit: masurat in meci, camera sta intre 84 si 119 studi de
+	celulele tablei, deci 130 acopera si coltul cel mai departat. Cu raza
+	implicita, acelasi zid se auzea la 13% din volumul lui.
+]]
+GameConfig.WorldSound = {
+	Volume = 0.9,
+	FullRange = 130,
+	FadeRange = 400,
+	--[[
+		Grupul prin care trec toate sunetele lumii.
+
+		Sunetul zidului e facut de server, pe obiectul lui, si de acolo se aude
+		la toata lumea. Butonul de sunet e insa al fiecarui jucator in parte si
+		n-are cum sa opreasca ceva ce nu a pornit el — dar poate da la zero
+		volumul grupului, la el pe client, fara sa atinga pe nimeni altcineva.
+	]]
+	Group = "BarricadeWorld",
+}
 
 return GameConfig

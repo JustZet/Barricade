@@ -106,6 +106,21 @@ function Podium.new(itemId: string?, parent: Instance, surface: CFrame, span: nu
 
 	local model = source:Clone()
 	model.Name = "Podium_" .. id
+
+	--[[
+		Tintuit pe loc, indiferent de unde vine modelul.
+
+		Un podium nu cade si nu se impinge niciodata: nici cel din vitrina, pe
+		care il misca `hover` cu `PivotTo` — si care s-ar bate cu fizica daca ar
+		fi liber — nici cel din meci, pe care sta un avatar. Asa nu depinde de
+		cum a fost lasat assetul la import.
+	]]
+	for _, piece in ipairs(model:GetDescendants()) do
+		if piece:IsA("BasePart") then
+			piece.Anchored = true
+		end
+	end
+
 	if span then
 		ModelFit.toSpan(model, span)
 	end
@@ -116,10 +131,28 @@ function Podium.new(itemId: string?, parent: Instance, surface: CFrame, span: nu
 	return self
 end
 
+--[[
+	Cat de sus e plinta fata de talpa soclului, in studi si la scara de acum.
+
+	`StandHeight` vine din pregatirea assetului. Cand lipseste — un model nou,
+	importat si uitat — raspunsul nu are voie sa fie zero: zero inseamna "stai
+	pe podea", si atunci un podium n-ar mai fi podium, iar avatarul ar ramane cu
+	soclul crescut prin el. Fara atribut se ia inaltimea intreaga a modelului,
+	adica se sta pe capacul lui; nu e exact, dar e in picioare.
+]]
+local function standHeight(self: Podium): number
+	local marked = self.Model:GetAttribute("StandHeight")
+	if typeof(marked) == "number" and marked > 0 then
+		return marked * self.Model:GetScale()
+	end
+
+	local _, size = self.Model:GetBoundingBox()
+	return size.Y
+end
+
 -- Unde sta un avatar: pe plinta, in centrul podiumului.
 function Podium.standCFrame(self: Podium): CFrame
-	local height = (self.Model:GetAttribute("StandHeight") :: number) or 0
-	return self.Base * CFrame.new(0, height * self.Model:GetScale(), 0)
+	return self.Base * CFrame.new(0, standHeight(self), 0)
 end
 
 -- Muta podiumul, impreuna cu punctul lui de referinta.
@@ -135,14 +168,29 @@ end
 	urcat pe el si il arunca de pe soclu.
 ]]
 function Podium.setSolid(self: Podium, solid: boolean)
-	local height = (self.Model:GetAttribute("StandHeight") :: number) or 0
 	local box, size = self.Model:GetBoundingBox()
-	local standTop = box.Position.Y - size.Y / 2 + height * self.Model:GetScale()
+	local standTop = box.Position.Y - size.Y / 2 + standHeight(self)
 
 	for _, piece in ipairs(self.Model:GetDescendants()) do
 		if piece:IsA("BasePart") then
 			-- Doar soclul, niciodata decorul de deasupra.
 			piece.CanCollide = solid and piece.Position.Y + piece.Size.Y / 2 <= standTop + 0.01
+		end
+	end
+end
+
+--[[
+	Raspunde podiumul la raze si la clicuri?
+
+	Pe tabla, nu: soclul sta peste celula pe care se apasa, si peste care trece
+	raza care cauta unde ar cadea zidul. Lasat interogabil, ar fura si clicul, si
+	fantoma — jucatorul ar da pe celula lui si nu s-ar intampla nimic. E aceeasi
+	masura pe care o ia si `Barricade` pentru zidurile asezate.
+]]
+function Podium.setQueryable(self: Podium, queryable: boolean)
+	for _, piece in ipairs(self.Model:GetDescendants()) do
+		if piece:IsA("BasePart") then
+			piece.CanQuery = queryable
 		end
 	end
 end

@@ -62,6 +62,7 @@ end
 	existe doua table deodata.
 ]]
 local WorldController = require(script.Controllers.WorldController)
+local ShowcaseController = require(script.Controllers.ShowcaseController)
 local worldMode = WorldController.isAvailable()
 
 if not worldMode then
@@ -219,6 +220,13 @@ if worldMode then
 		local Showcase = require(World.Showcase)
 		local stands = Showcase.build(lobby)
 		print(string.format("[Barricade] %d vitrine umplute in lobby", #stands))
+
+		--[[
+			Ofertele vin dupa vitrine, si din ele: fiecare soclu primeste placuta
+			lui si un `ProximityPrompt`, ca obiectul expus sa poata fi cumparat
+			de pe loc. Magazinul ramane pentru cine vrea sa vada tot raftul.
+		]]
+		ShowcaseController.attach(stands)
 
 		--[[
 			Steagurile sunt decor pur, ca si vitrinele: se misca doar pe client.

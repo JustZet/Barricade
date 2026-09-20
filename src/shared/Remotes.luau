@@ -26,6 +26,15 @@ local REQUESTS = {
 	-- Cererea de cumparare. Trimite doar id-ul articolului: pretul il stie
 	-- serverul din catalog, si un pret venit de la client n-ar insemna nimic.
 	"RequestPurchase",
+	--[[
+		Cererea de echipare. Trimite felul si id-ul, atat: daca obiectul e al
+		lui se afla pe server, din inventar.
+
+		Raspunsul nu se intoarce pe un canal, ci ca atribut pe `Player` — vezi
+		`Loadout`. Alegerea trebuie vazuta si de ceilalti jucatori, nu doar de
+		proprietar, iar un atribut ajunge la toti dintr-o singura scriere.
+	]]
+	"RequestEquip",
 }
 
 -- Server -> client. Fapte deja intamplate.

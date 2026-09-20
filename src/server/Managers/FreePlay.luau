@@ -165,13 +165,13 @@ local function start()
 
 		`hold` tine `tick` departe de semn cat dureaza. Altfel scrisul lui, care
 		vine la fiecare masuratoare, s-ar bate cu al nostru si ar clipi intre
-		"3" si "urca pe soclu".
+		"3" si "step on the pad".
 	]]
 	hold = os.clock() + GameConfig.Timing.StartCountdown
 	task.spawn(function()
 		for left = GameConfig.Timing.StartCountdown, 1, -1 do
 			if sign then
-				sign:show(tostring(left), "meciul incepe", true)
+				sign:show(tostring(left), "match starting", true)
 			end
 			task.wait(1)
 		end
@@ -198,7 +198,7 @@ local function tick(delta: number)
 	if count == 0 then
 		remaining = SETTINGS.Countdown
 		if sign and not quiet then
-			sign:show("FREE PLAY", string.format("urca pe soclu — %d jucatori", CAPACITY), false)
+			sign:show("FREE PLAY", string.format("step on the pad — %d players", CAPACITY), false)
 		end
 		return
 	end
@@ -222,7 +222,7 @@ local function tick(delta: number)
 	if sign and not quiet then
 		sign:show(
 			string.format("%d", math.max(0, math.ceil(remaining))),
-			string.format("%d / %d asteapta", count, CAPACITY),
+			string.format("%d / %d waiting", count, CAPACITY),
 			false
 		)
 	end

@@ -240,8 +240,16 @@ local function resolveId(anchor: Model): string?
 	return found
 end
 
-function Showcase.new(anchor: Model, kind: Kind, index: number): Showcase?
-	local id = resolveId(anchor)
+function Showcase.new(anchor: Model, kind: Kind, index: number, featured: string?): Showcase?
+	--[[
+		Ce arata vitrina: intai ce i s-a dat, apoi ce scrie pe ea.
+
+		Sirul de skinuri scumpe vine din `build`, fiindca doar el stie cate
+		vitrine sunt si in ce ordine. Numele soclului ramane plasa de siguranta:
+		daca intr-o zi sunt mai multe vitrine decat skinuri de vanzare, ultimele
+		arata ce arata azi.
+	]]
+	local id = featured or resolveId(anchor)
 	if not id then
 		warn(string.format("Showcase: nu stiu ce arata %q", anchor:GetFullName()))
 		return nil
@@ -354,13 +362,108 @@ local function isPodiumStand(anchor: Model): boolean
 end
 
 --[[
+	Sirul skinurilor puse la vanzare in lobby: cele mai scumpe, in ordine.
+
+	Lobby-ul e raftul din fata magazinului, nu un depozit: acolo stau lucrurile
+	pentru care merita sa te opresti si sa dai banutii. Cine vrea si restul
+	deschide magazinul — vitrina arata varful.
+
+	Obiectele de start nu intra in sir. `wood` il are oricine din prima, deci o
+	vitrina cu el n-ar vinde nimic, ar ocupa doar un loc.
+
+	La pret egal decide ordinea din catalog, care merge de la sobru la
+	spectaculos. Nu de dragul de a avea o regula: fara ea, doua obiecte cu
+	acelasi pret si-ar schimba locurile de la o pornire la alta, dupa cum se
+	nimereste sortarea, si nimeni n-ar sti de ce.
+]]
+local RANK: { [string]: number } = {}
+for index, id in ipairs(Catalog.Order) do
+	RANK[id] = index
+end
+
+local function priciest(kind: Kind): { string }
+	local ranked: { Catalog.Item } = {}
+	for _, item in ipairs(Catalog.list(kind)) do
+		if not item.Default then
+			table.insert(ranked, item)
+		end
+	end
+
+	table.sort(ranked, function(a, b)
+		if a.Coins ~= b.Coins then
+			return a.Coins > b.Coins
+		end
+		if a.Price ~= b.Price then
+			return a.Price > b.Price
+		end
+		return RANK[a.Id] > RANK[b.Id]
+	end)
+
+	local ids: { string } = {}
+	for _, item in ipairs(ranked) do
+		table.insert(ids, item.Id)
+	end
+	return ids
+end
+
+--[[
+	Ordinea in care vitrinele primesc skinurile: dinspre mijlocul galeriei spre
+	capete.
+
+	Cel mai scump sta in mijloc, fiindca mijlocul e singurul loc care arata la
+	fel din orice parte ai intra. Ordinea in care le gaseste `GetDescendants` ar
+	fi mers si ea, dar nu inseamna nimic: e ordinea din fisierul place-ului, si
+	se schimba daca cineva muta un soclu in arbore.
+
+	Departarea se masoara fata de centrul sirului acelui fel. La distante egale
+	decid coordonatele, ca doua vitrine simetrice sa nu-si schimbe locurile intre
+	doua porniri.
+
+	Locul se ia din `DisplayBase`, nu din cutia incadratoare, si asta conteaza:
+	atributul e un fapt scris in place si ajunge la client intreg, pe cand un
+	model caruia inca nu i-au sosit piesele raporteaza o cutie in originea lumii.
+	O singura vitrina nereplicata inca trage centrul sirului dupa ea tocmai in
+	clipa in care se socoteste ordinea, si atunci cel mai scump skin ajunge unde
+	se nimereste. Asa s-a si intamplat: zidurile iesisera corect, soclurile nu.
+]]
+local function fromMiddle(anchors: { Model }): { Model }
+	local center = Vector3.zero
+	local spot: { [Model]: Vector3 } = {}
+	for _, anchor in anchors do
+		local saved = anchor:GetAttribute("DisplayBase")
+		local at = if typeof(saved) == "CFrame"
+			then saved.Position
+			else anchor:GetBoundingBox().Position
+		spot[anchor] = at
+		center += at
+	end
+	if #anchors > 0 then
+		center /= #anchors
+	end
+
+	local sorted = table.clone(anchors)
+	table.sort(sorted, function(a, b)
+		local near, far = (spot[a] - center).Magnitude, (spot[b] - center).Magnitude
+		if math.abs(near - far) > 0.01 then
+			return near < far
+		end
+		if spot[a].Z ~= spot[b].Z then
+			return spot[a].Z < spot[b].Z
+		end
+		return spot[a].X < spot[b].X
+	end)
+	return sorted
+end
+
+--[[
 	Construieste toate vitrinele gasite sub `root`.
 
 	Cauta dupa nume, nu dupa o lista de cai scrisa de mana: cand lobby-ul mai
-	primeste o vitrina, ea se umple singura, fara sa se atinga codul.
+	primeste o vitrina, ea se umple singura, fara sa se atinga codul — si intra
+	in acelasi sir, pe locul ei dupa pret.
 ]]
 function Showcase.build(root: Instance): { Showcase }
-	local stands: { Showcase } = {}
+	local found: { [string]: { Model } } = { Barricade = {}, Podium = {} }
 
 	for _, node in ipairs(root:GetDescendants()) do
 		if not node:IsA("Model") or not isStand(node) then
@@ -376,9 +479,22 @@ function Showcase.build(root: Instance): { Showcase }
 		end
 
 		local kind: Kind = if isPodiumStand(node) then PODIUM else BARRICADE
-		local stand = Showcase.new(node, kind, #stands + 1)
-		if stand then
-			table.insert(stands, stand)
+		table.insert(found[kind], node)
+	end
+
+	local stands: { Showcase } = {}
+
+	for _, kind: Kind in { BARRICADE, PODIUM } do
+		local ids = priciest(kind)
+		local rank = 0
+
+		for _, anchor in fromMiddle(found[kind]) do
+			local stand = Showcase.new(anchor, kind, #stands + 1, ids[rank + 1])
+			if stand then
+				-- Locul din sir se consuma doar daca vitrina chiar s-a facut.
+				rank += 1
+				table.insert(stands, stand)
+			end
 		end
 	end
 
