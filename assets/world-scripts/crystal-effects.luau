@@ -340,7 +340,7 @@ local function sparkleOn(part: BasePart)
 	emitter.Drag = 1.6
 	emitter.Rotation = NumberRange.new(0, 360)
 	emitter.RotSpeed = NumberRange.new(-90, 90)
-	emitter.LightEmission = 1
+	emitter.LightEmission = 0.5
 	emitter.LightInfluence = 0
 	emitter.Rate = 3.5
 	emitter.Parent = part
@@ -379,14 +379,14 @@ local function lampOn(part: BasePart, range: number)
 	light.Name = "Facet"
 	light.Color = part.Color
 	light.Range = range
-	light.Brightness = 1.2
+	light.Brightness = 0.45
 	light.Shadows = false
 	light.Parent = part
 	table.insert(lamps, light)
 end
 
 for _, part in collect({ "^cluster_core_[lr]$", "^drake_jaw$", "^drake_head$" }) do
-	lampOn(part, 14)
+	lampOn(part, 9)
 end
 
 --[[
@@ -400,7 +400,7 @@ if #lamps < 2 then
 		return a.Size.Y > b.Size.Y
 	end)
 	for index = 1, math.min(2 - #lamps, #tallest) do
-		lampOn(tallest[index], 16)
+		lampOn(tallest[index], 10)
 	end
 end
 
@@ -566,7 +566,7 @@ RunService.Heartbeat:Connect(function(delta: number)
 
 	local breath = (math.sin(clock * 1.4) + 1) / 2
 	for _, lamp in lamps do
-		lamp.Brightness = 0.9 + breath * 0.9 + glint * 2.5
+		lamp.Brightness = 0.35 + breath * 0.35 + glint * 0.9
 	end
 
 	for _, floater in floaters do

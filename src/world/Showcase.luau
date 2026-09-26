@@ -37,6 +37,7 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Catalog = require(ReplicatedStorage.Shared.Catalog)
+local Gift = require(ReplicatedStorage.Shared.Gift)
 
 local Barricade = require(script.Parent.Barricade)
 local Hover = require(script.Parent.Hover)
@@ -98,6 +99,13 @@ type ShowcaseFields = {
 	Base: CFrame,
 	-- Locul in sir, doar ca sa-si ia faza proprie.
 	Index: number,
+	--[[
+		E stagiul darului, nu o vitrina de vanzare?
+
+		Arata la fel si se construieste la fel; se schimba doar ce scrie pe placa
+		si ce se intampla la apasare. De aceea nu e o clasa noua, ci un semn.
+	]]
+	Gift: boolean,
 	--[[
 		Obiectul expus. E `Barricade` sau `Podium`, doua clase diferite care
 		raspund la aceleasi trei lucruri de care are nevoie o vitrina: `hover`,
@@ -204,6 +212,30 @@ local function slotOf(anchor: Model): CFrame?
 end
 
 --[[
+	Talpa unui stagiu: fata lui de sus.
+
+	Se ia piesa lui — stagiul e un singur mesh plat — si se urca o jumatate de
+	inaltime. Obiectul sta pe el cum ar sta pe o masa.
+]]
+local function stageTop(anchor: Model): CFrame?
+	--[[
+		Aceeasi rabdare ca la machete: lobby-ul ajunge la client bucata cu
+		bucata, iar vitrinele se construiesc devreme. Intrebat prea repede,
+		stagiul e un model gol si nu are de unde sa-si spuna inaltimea.
+	]]
+	local deadline = os.clock() + REPLICATION_WAIT
+	while not hasParts(anchor) and os.clock() < deadline do
+		task.wait(0.1)
+	end
+
+	local slab = anchor:FindFirstChildWhichIsA("BasePart", true)
+	if not slab then
+		return nil
+	end
+	return CFrame.new(slab.Position.X, slab.Position.Y + slab.Size.Y / 2, slab.Position.Z)
+end
+
+--[[
 	Ce arata vitrina.
 
 	Numele lobby-ului poarta id-ul in el (`display_castle_stone`), dar pe un nume
@@ -240,7 +272,13 @@ local function resolveId(anchor: Model): string?
 	return found
 end
 
-function Showcase.new(anchor: Model, kind: Kind, index: number, featured: string?): Showcase?
+function Showcase.new(
+	anchor: Model,
+	kind: Kind,
+	index: number,
+	featured: string?,
+	gift: boolean?
+): Showcase?
 	--[[
 		Ce arata vitrina: intai ce i s-a dat, apoi ce scrie pe ea.
 
@@ -259,7 +297,11 @@ function Showcase.new(anchor: Model, kind: Kind, index: number, featured: string
 		return nil
 	end
 
-	local base = slotOf(anchor)
+	--[[
+		Stagiul darului n-are macheta de la care sa se masoare — e o platforma
+		goala, care asteapta sa i se puna ceva. Talpa lui e chiar fata ei de sus.
+	]]
+	local base = if gift then stageTop(anchor) else slotOf(anchor)
 	if not base then
 		warn(string.format("Showcase: %q nu are macheta de la care sa iau soclul", anchor.Name))
 		return nil
@@ -282,6 +324,7 @@ function Showcase.new(anchor: Model, kind: Kind, index: number, featured: string
 	self.Id = id
 	self.Base = base
 	self.Index = index
+	self.Gift = gift == true
 	self.Item = nil
 
 	self:show(id)
@@ -350,6 +393,19 @@ local function isStand(anchor: Model): boolean
 		return false
 	end
 	return string.match(name, "^podium_display") ~= nil or string.match(name, "^display_") ~= nil
+end
+
+--[[
+	Stagiul darului.
+
+	Importul glTF ii pune mesh-ul intr-un model cu `_Node` la coada, iar regula
+	de mai sus ar arunca tocmai modelul care ne trebuie. De aceea se intreaba
+	separat, si pe numele intreg: in aceeasi zona mai sta un `future_stage_ring`,
+	inelul din jurul lui, care e decor si n-are ce tine.
+]]
+local function isGiftStage(anchor: Instance): boolean
+	local name = string.lower(anchor.Name)
+	return name == "future_stage" or name == "future_stage_node"
 end
 
 --[[
@@ -483,6 +539,19 @@ function Showcase.build(root: Instance): { Showcase }
 	end
 
 	local stands: { Showcase } = {}
+
+	--[[
+		Stagiul darului nu intra in sirul dupa pret: el arata un obiect anume, pe
+		care nu-l vinde nimeni. De aceea se face inainte si separat.
+	]]
+	for _, node in ipairs(root:GetDescendants()) do
+		if node:IsA("Model") and isGiftStage(node) then
+			local stage = Showcase.new(node, Gift.Item.Kind, #stands + 1, Gift.Item.Id, true)
+			if stage then
+				table.insert(stands, stage)
+			end
+		end
+	end
 
 	for _, kind: Kind in { BARRICADE, PODIUM } do
 		local ids = priciest(kind)

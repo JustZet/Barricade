@@ -197,7 +197,7 @@ for _, dot in model:GetDescendants() do
 	emitter.EmissionDirection = Enum.NormalId.Front
 	emitter.Rotation = NumberRange.new(0, 360)
 	emitter.RotSpeed = NumberRange.new(-120, 120)
-	emitter.LightEmission = 1
+	emitter.LightEmission = 0.5
 	emitter.LightInfluence = 0
 	emitter.Rate = 8
 	emitter.Parent = dot
@@ -214,8 +214,8 @@ if core then
 	local light = Instance.new("PointLight")
 	light.Name = "CoreGlow"
 	light.Color = Color3.fromHex("8e6bff")
-	light.Range = 14
-	light.Brightness = 1.6
+	light.Range = 9
+	light.Brightness = 0.55
 	light.Shadows = false
 	light.Parent = core
 	glow = light
@@ -285,7 +285,7 @@ RunService.Heartbeat:Connect(function(delta: number)
 		veil.Transparency = veilBase - 0.06 + breath * 0.12
 	end
 	if glow then
-		glow.Brightness = 1.1 + breath * 1.4
+		glow.Brightness = 0.4 + breath * 0.5
 	end
 	if standGlow then
 		standGlow.Transparency = standBase + 0.2 - breath * 0.2

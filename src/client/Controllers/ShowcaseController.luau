@@ -29,10 +29,13 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Shared = ReplicatedStorage.Shared
 local Catalog = require(Shared.Catalog)
+local Gift = require(Shared.Gift)
 local Loadout = require(Shared.Loadout)
 local Remotes = require(Shared.Remotes)
 
-local Skins = require(ReplicatedStorage:WaitForChild("World").Skins)
+local World = ReplicatedStorage:WaitForChild("World")
+local Pedestal = require(World.Pedestal)
+local Skins = require(World.Skins)
 
 local OfferView = require(script.Parent.Parent.UI.OfferView)
 local Pocket = require(script.Parent.Parent.Pocket)
@@ -46,9 +49,16 @@ local ShowcaseController = {}
 --[[
 	De la ce distanta se poate cumpara, in studi.
 
-	Cam doi pasi in jurul vitrinei. Mai mult, si doua vitrine alaturate ar fi
-	deodata la indemana, iar `ProximityPrompt` ar tot comuta intre ele cat te
-	misti; mai putin, si ar trebui sa intri cu nasul in obiect.
+	Se masoara de la **talpa** vitrinei, nu de la punctul de care atarna
+	placuta. Pana acum se masura de sus: placuta pluteste peste un soclu inalt
+	de vreo douasprezece studi, iar de acolo pana la pieptul cuiva care sta pe
+	podea sunt deja aproape toti cei paisprezece — asa ca trebuia sa te lipesti
+	de soclu ca sa se deschida cartonasul, desi stateai chiar in fata lui.
+	Coborata la nivelul pe care umbla omul, aceeasi cifra acopera locul din care
+	chiar te uiti la vitrina.
+
+	Cu doua vitrine alaturate se ajunge acum des in raza amandurora. Nu mai e o
+	problema: se alege cea mai apropiata — vezi `updateFocus`.
 ]]
 local REACH = 14
 
@@ -68,15 +78,33 @@ local PRESS_DELAY = 0
 -- Cat de sus fata de varful vitrinei pluteste placuta.
 local LIFT = 1.4
 
+--[[
+	Cat de des se cauta vitrina cea mai apropiata, in secunde.
+
+	Nu la fiecare cadru: nimeni nu trece dintr-o vitrina in alta intre doua
+	cadre, iar o cautare de sapte distante de saizeci de ori pe secunda e munca
+	facuta degeaba. O saptime de secunda e sub ce se simte ca intarziere si de
+	zece ori mai ieftina.
+]]
+local FOCUS_INTERVAL = 0.14
+
 type Stand = {
 	View: OfferView.OfferView,
 	Prompt: ProximityPrompt,
+	--[[
+		Punctul de la care se masoara apropierea: talpa vitrinei, la nivelul
+		podelei pe care umbla jucatorul. Vezi `reachFor`.
+	]]
+	Reach: BasePart,
 	Kind: Kind,
 	Id: string,
+	-- Stagiul darului: nu se plateste, se cere.
+	Gift: boolean,
 }
 
 local stands: { Stand } = {}
 local listening = false
+local watching = false
 
 --[[
 	Oferta unei vitrine, asa cum arata *acum*.
@@ -86,7 +114,7 @@ local listening = false
 	serverul. Daca ar fi socotite aici a doua oara, cartonasul ar putea aprinde
 	un buton peste un refuz.
 ]]
-local function describe(kind: Kind, id: string): OfferView.Offer
+local function describe(kind: Kind, id: string, gift: boolean): OfferView.Offer
 	local item = Catalog.get(kind, id)
 	local isOwned = Catalog.owns(Pocket.owned(), kind, id)
 	local isWorn = LOCAL_PLAYER:GetAttribute(Loadout.attribute(kind)) == id
@@ -95,7 +123,7 @@ local function describe(kind: Kind, id: string): OfferView.Offer
 		Kind = kind,
 		Id = id,
 		Name = Skins.get(id).DisplayName,
-		Title = if kind == "Podium" then "PODIUM" else "BARRICADE",
+		Title = if gift then Gift.Title elseif kind == "Podium" then "PODIUM" else "BARRICADE",
 		Action = "",
 		Tone = "SOON",
 		Coined = false,
@@ -110,6 +138,18 @@ local function describe(kind: Kind, id: string): OfferView.Offer
 	if isOwned then
 		offer.Action = "EQUIP"
 		offer.Tone = "EQUIP"
+		return offer
+	end
+
+	--[[
+		Darul n-are pret, deci n-are nici moneda si nici socoteala de facut: pe
+		buton scrie indemnul din `Gift`, si il primeste oricine apasa. Ce se cere
+		in schimb — un like — nu se poate verifica din cod, si asta e in regula:
+		e o intelegere, spusa pe fata, nu o poarta.
+	]]
+	if gift then
+		offer.Action = Gift.Call
+		offer.Tone = "BUY"
 		return offer
 	end
 
@@ -132,7 +172,7 @@ end
 
 local function refresh()
 	for _, stand in stands do
-		stand.View:paint(describe(stand.Kind, stand.Id))
+		stand.View:paint(describe(stand.Kind, stand.Id, stand.Gift))
 	end
 end
 
@@ -154,6 +194,15 @@ local function act(stand: Stand)
 
 	if Catalog.owns(Pocket.owned(), kind, id) then
 		Remotes.get("RequestEquip"):FireServer(kind, id)
+		return
+	end
+
+	--[[
+		Cererea darului nu duce cu ea niciun id: serverul stie ce da. Un id venit
+		de aici ar face din dar un magazin fara bani.
+	]]
+	if stand.Gift then
+		Remotes.get("RequestGift"):FireServer()
 		return
 	end
 
@@ -193,14 +242,96 @@ local function anchorFor(anchor: Model): BasePart
 	return part
 end
 
-local function bind(stand: Stand, view: OfferView.OfferView, prompt: ProximityPrompt)
-	prompt.PromptShown:Connect(function()
-		view:setNear(true)
-	end)
-	prompt.PromptHidden:Connect(function()
-		view:setNear(false)
-	end)
+--[[
+	Punctul de la care se masoara apropierea de o vitrina.
 
+	Sta la talpa ei, nu in varf. `OfferAnchor` — de care atarna placuta si
+	cartonasul — e pus deasupra obiectului expus, adica la vreo douasprezece
+	studi peste podea; masurata de acolo, distanta pana la cineva care sta in
+	fata soclului e aproape numai pe verticala, si se consuma degeaba toata raza.
+	Aici coboara la inaltimea la care chiar umbla omul.
+
+	Nu raspunde la raze si nu se poate atinge: e un reper, nu un obiect.
+]]
+local function reachFor(anchor: Model): BasePart
+	local existing = anchor:FindFirstChild("OfferReach")
+	if existing and existing:IsA("BasePart") then
+		return existing
+	end
+
+	local box, size = anchor:GetBoundingBox()
+
+	local part = Instance.new("Part")
+	part.Name = "OfferReach"
+	part.Anchored = true
+	part.CanCollide = false
+	part.CanQuery = false
+	part.CanTouch = false
+	part.Transparency = 1
+	part.Size = Vector3.new(1, 1, 1)
+	part.CFrame = CFrame.new(box.Position.X, box.Position.Y - size.Y / 2, box.Position.Z)
+	part.Parent = anchor
+	return part
+end
+
+--[[
+	Deschide cartonasul unei singure vitrine: cea mai apropiata, daca e in raza.
+
+	Pana acum fiecare vitrina isi hotara singura soarta, dupa `PromptShown` si
+	`PromptHidden`. Mergea cat timp razele nu se atingeau, dar in galerie
+	soclurile stau la cincisprezece studi unul de altul: cu raza coborata la
+	nivelul podelei ajungi des intre doua, si se deschideau amandoua deodata —
+	doua cartonase suprapuse peste doua vitrine, si nu se stia care buton al
+	cui e.
+
+	Alegerea celui mai apropiat inchide si promptul celorlalti, nu doar
+	cartonasul: altfel tasta ar fi cumparat de la o vitrina al carei cartonas nu
+	era pe ecran.
+]]
+local function updateFocus()
+	local character = LOCAL_PLAYER.Character
+	local root = character and character:FindFirstChild("HumanoidRootPart")
+
+	local closest: Stand? = nil
+	if root and root:IsA("BasePart") then
+		local best = REACH
+		for _, stand in stands do
+			local away = (stand.Reach.Position - root.Position).Magnitude
+			if away < best then
+				best = away
+				closest = stand
+			end
+		end
+	end
+
+	for _, stand in stands do
+		local focused = stand == closest
+		stand.Prompt.Enabled = focused
+		stand.View:setNear(focused)
+	end
+end
+
+--[[
+	Cautarea merge pe firul ei, si porneste o singura data oricate vitrine ar fi.
+
+	Pe `Heartbeat` ar fi fost mai simplu de scris, dar ar fi legat pretul unei
+	cautari de cadenta ecranului — vezi `FOCUS_INTERVAL`.
+]]
+local function watch()
+	if watching then
+		return
+	end
+	watching = true
+
+	task.spawn(function()
+		while true do
+			updateFocus()
+			task.wait(FOCUS_INTERVAL)
+		end
+	end)
+end
+
+local function bind(stand: Stand, view: OfferView.OfferView, prompt: ProximityPrompt)
 	--[[
 		Doua intrari, o singura fapta.
 
@@ -256,7 +387,15 @@ function ShowcaseController.attach(showcases: { any })
 		end
 
 		local part = anchorFor(anchor)
+		local reach = reachFor(anchor)
 		local view = OfferView.new(part, LIFT)
+
+		--[[
+			Cupola care tine oamenii jos de pe soclu. Poate sa nu iasa — o vitrina
+			fara `DisplayBase` sau lipita de podea nu are ce pazi — si atunci
+			totul merge mai departe fara ea.
+		]]
+		Pedestal.guard(anchor)
 
 		local prompt = Instance.new("ProximityPrompt")
 		prompt.Name = "OfferPrompt"
@@ -272,19 +411,27 @@ function ShowcaseController.attach(showcases: { any })
 			te uiti la el.
 		]]
 		prompt.RequiresLineOfSight = false
-		prompt.Parent = part
+		--[[
+			Promptul sta pe reperul de la talpa, nu pe cel de sus: el masoara
+			distanta de la piesa pe care e pus, si trebuie sa raspunda exact de
+			unde se deschide si cartonasul.
+		]]
+		prompt.Parent = reach
 
 		local stand: Stand = {
 			View = view,
 			Prompt = prompt,
+			Reach = reach,
 			Kind = showcase.Kind,
 			Id = showcase.Id,
+			Gift = showcase.Gift == true,
 		}
 		table.insert(stands, stand)
 		bind(stand, view, prompt)
 	end
 
 	listen()
+	watch()
 	refresh()
 end
 

@@ -12,6 +12,7 @@
 local Players = game:GetService("Players")
 local Lighting = game:GetService("Lighting")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local StarterGui = game:GetService("StarterGui")
 local Workspace = game:GetService("Workspace")
 
 local LOCAL_PLAYER = Players.LocalPlayer
@@ -19,16 +20,66 @@ local PLAYER_GUI = LOCAL_PLAYER:WaitForChild("PlayerGui")
 
 local Theme = require(script.UI.Theme)
 local BoardView = require(script.UI.BoardView)
+local CalloutView = require(script.UI.CalloutView)
+local ConfirmView = require(script.UI.ConfirmView)
 local HudView = require(script.UI.HudView)
 local LobbyView = require(script.UI.LobbyView)
+local MusicButton = require(script.UI.MusicButton)
+local RematchView = require(script.UI.RematchView)
 local VictoryView = require(script.UI.VictoryView)
 
-local LoadingView = require(script.UI.LoadingView)
 local WalletView = require(script.UI.WalletView)
 local StoreView = require(script.UI.StoreView)
+local PlayersView = require(script.UI.PlayersView)
+local ChallengeView = require(script.UI.ChallengeView)
+local SocialToast = require(script.UI.SocialToast)
+local InviteView = require(script.UI.InviteView)
+local SocialController = require(script.Controllers.SocialController)
 
 local GameController = require(script.Controllers.GameController)
 local SoundController = require(script.Controllers.SoundController)
+
+--[[
+	Semnalul prin care ecranul de incarcare afla ca poate pleca.
+
+	Cortina e ridicata de `ReplicatedFirst.Boot`, care porneste inaintea acestui
+	script si nu are de unde sti cand lobby-ul e desenat. Un atribut pe jucator e
+	tot ce trebuie: nu e canal de retea — nu iese nimic din clientul asta — deci
+	nu are ce cauta in `Remotes`. Numele trebuie sa fie acelasi in amandoua
+	locurile, si asta e singurul lor punct de atingere.
+]]
+local READY_ATTRIBUTE = "BarricadeClientReady"
+
+local function markReady()
+	LOCAL_PLAYER:SetAttribute(READY_ATTRIBUTE, true)
+end
+
+--[[
+	Lista de jucatori a Roblox-ului se stinge.
+
+	Jocul isi tine deja oamenii pe ecran, si mai bine decat ea: cardurile din
+	HUD spun nume, culoare, ceas, cate baricade au ramas si cine e la mutare.
+	Lista din dreapta repeta doar numele — si le pune peste tabla, care in 3D
+	urca pana sus in coltul acela.
+
+	Se incearca de cateva ori: `SetCoreGuiEnabled` cere ca interfata de baza sa
+	fie deja acolo, iar la pornirea clientului uneori inca nu e. Un `pcall` care
+	esueaza in tacere ar lasa lista aprinsa fara sa spuna nimeni de ce.
+]]
+local function hidePlayerList()
+	for _ = 1, 10 do
+		local ok = pcall(function()
+			StarterGui:SetCoreGuiEnabled(Enum.CoreGuiType.PlayerList, false)
+		end)
+		if ok then
+			return
+		end
+		task.wait(0.2)
+	end
+	warn("[Barricade] lista de jucatori a Roblox-ului nu a putut fi stinsa")
+end
+
+task.spawn(hidePlayerList)
 
 --[[
 	Camera ramane imobila. Fara asta, o camera fara personaj de urmarit
@@ -79,6 +130,25 @@ end
 
 SoundController.init()
 
+--[[
+	Muzica porneste cand se ridica ecranul de incarcare, nu cand porneste
+	scriptul. Boot-ul scrie atributul la sfarsit, oricum s-ar fi terminat — cu
+	cortina, fara ea sau pe varianta 2D. Numele e acelasi ca in
+	`src/boot/init.client.luau`.
+]]
+local CURTAIN_ATTRIBUTE = "BarricadeCurtainLifted"
+if LOCAL_PLAYER:GetAttribute(CURTAIN_ATTRIBUTE) then
+	SoundController.allowMusic()
+else
+	LOCAL_PLAYER:GetAttributeChangedSignal(CURTAIN_ATTRIBUTE):Once(function()
+		SoundController.allowMusic()
+	end)
+end
+
+-- Muzica se comuta din bara de sus, oriunde ai fi: in lobby sau la masa.
+MusicButton.new(PLAYER_GUI, SoundController.toggleMusic)
+	:setEnabled(SoundController.isMusicEnabled())
+
 local screen = Theme.create("ScreenGui", {
 	Name = "BarricadeUI",
 	ResetOnSpawn = false,
@@ -114,13 +184,36 @@ local views = {
 	Hud = HudView.new(backdrop),
 	Lobby = LobbyView.new(backdrop),
 	Victory = VictoryView.new(backdrop),
+	-- Bannerul votului de revansa, peste ecranul de final.
+	Rematch = RematchView.new(backdrop),
 	--[[
 		Banutii stau in afara paginilor lobby-ului, nu inauntrul lor: soldul e
 		acelasi si in meniu, si in coada, si in timpul meciului. Pus intr-o
 		pagina, ar disparea odata cu ea si ar trebui redesenat in fiecare.
 	]]
 	Wallet = WalletView.new(backdrop),
+	--[[
+		Intrebarea de dinaintea plecarii sta ultima in tabel, si asta se si vede
+		pe ecran: construita dupa toate celelalte, cade peste ele.
+	]]
+	Confirm = ConfirmView.new(backdrop),
+	--[[
+		Callout-urile de dupa mutari au ecranul lor, peste tot restul: trec peste
+		tabla si carduri fara sa prinda vreun clic.
+	]]
+	Callouts = CalloutView.new(PLAYER_GUI),
+	-- Stratul social: lista de jucatori, bannerul provocarii, notificarile.
+	Players = PlayersView.new(backdrop),
+	Challenge = ChallengeView.new(backdrop),
+	SocialToast = SocialToast.new(backdrop),
+	Invite = InviteView.new(backdrop),
 }
+
+--[[
+	Controllerul social se face dupa vederile lui si inaintea lui `GameController`,
+	care il anunta cand intri si iesi din lobby.
+]]
+views.Social = SocialController.new(views, backdrop)
 
 --[[
 	Magazinul exista doar daca are cu ce se desena.
@@ -167,20 +260,13 @@ GameController.new(views)
 	Aici insa mesh-urile sunt sute de piese, si daca nu sunt cerute din timp
 	apar una cate una in timpul meciului.
 
-	Preincarcarea ruleaza pe un fir separat: blocheaza ecranul, nu si restul
-	pornirii, asa ca lobby-ul si controllerele sunt gata in spatele lui.
+	Ecranul nu se mai ridica de aici. Scriptul asta porneste abia dupa ce Roblox
+	si-a strans ecranul lui si a aratat lumea, deci o cortina pusa aici vine
+	mereu prea tarziu — apare peste ceva ce s-a vazut deja incarcandu-se. Acum o
+	pune `ReplicatedFirst.Boot`, inainte de primul cadru, iar de aici se spune
+	doar cand e gata de ridicat: vezi `READY_ATTRIBUTE`.
 ]]
 if worldMode then
-	local loading = LoadingView.new(PLAYER_GUI)
-	loading:animateTitle()
-	loading:spinEmblem()
-
-	task.spawn(function()
-		local assets = ReplicatedStorage:FindFirstChild("Assets")
-		loading:preload(if assets then { assets } else {})
-		loading:finish()
-	end)
-
 	backdrop.BackgroundTransparency = 1
 
 	--[[
@@ -213,6 +299,7 @@ if worldMode then
 		local lobby = Workspace:WaitForChild("Lobby", LOBBY_WAIT)
 		if not lobby then
 			warn("[Barricade] lobby-ul nu a ajuns la client; decorul ramane nefacut")
+			markReady()
 			return
 		end
 		local World = ReplicatedStorage:WaitForChild("World")
@@ -240,9 +327,17 @@ if worldMode then
 		local Flag = require(World.Flag)
 		Flag.build(lobby)
 		print("[Barricade] steagurile din lobby flutura")
+
+		--[[
+			Abia acum e lobby-ul intreg. Cortina se ridica peste vitrinele pline si
+			peste steagurile care deja flutura, nu peste soclurile goale care se
+			umplu sub ochii jucatorului.
+		]]
+		markReady()
 	end)
 
 	print("[Barricade] lume 3D pornita — clic pe celula ca sa te muti, R = rotire zidul")
 else
+	markReady()
 	print("[Barricade] client pornit")
 end

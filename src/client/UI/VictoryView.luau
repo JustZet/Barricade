@@ -29,17 +29,29 @@ VictoryView.__index = VictoryView
 ]]
 local AUTO_LEAVE_SECONDS = GameConfig.Timing.VictoryAutoLeave
 
+-- Inaltimea panoului: rezultat, serie, randurile recompensei, numaratoarea si butoanele.
+local PANEL_HEIGHT = 390
+
 type VictoryFields = {
 	Callbacks: { [string]: any },
 	Root: Frame,
 	Panel: Frame,
 	Headline: TextLabel,
 	Detail: TextLabel,
+	-- „Rematch #3 · 2–1", sub rezultat. Gol la primul meci dintre ei.
+	Series: TextLabel,
+	-- Randurile recompensei: „Win +75", „Group bonus +8". Apar pe rand, cu un salt.
+	Rewards: Frame,
+	RewardLines: { any },
+	-- Sub panou: ADD FRIEND pe fiecare adversar care nu e deja prieten.
+	Friends: Frame,
 	Countdown: TextLabel,
 	AgainButton: TextButton,
 	LeaveButton: TextButton,
 	-- Firul care numara pana la inchiderea singura. Lipseste cat ecranul e ascuns.
 	Timer: thread?,
+	-- Unde e votul de revansa; vezi `setRematch`.
+	Phase: "IDLE" | "WAITING" | "CLOSED",
 }
 
 export type VictoryView = typeof(setmetatable({} :: VictoryFields, VictoryView))
@@ -48,6 +60,7 @@ function VictoryView.new(parent: Instance): VictoryView
 	local self = setmetatable({}, VictoryView) :: VictoryView
 
 	self.Callbacks = {} :: { [string]: any }
+	self.Phase = "IDLE"
 
 	local root = Theme.create("Frame", {
 		Name = "Victory",
@@ -66,7 +79,7 @@ function VictoryView.new(parent: Instance): VictoryView
 		BorderSizePixel = 0,
 		AnchorPoint = Vector2.new(0.5, 0.5),
 		Position = UDim2.fromScale(0.5, 0.5),
-		Size = UDim2.fromOffset(420, 300),
+		Size = UDim2.fromOffset(420, PANEL_HEIGHT),
 		Parent = root,
 	}, {
 		Theme.corner(Theme.Radius.Large),
@@ -107,6 +120,49 @@ function VictoryView.new(parent: Instance): VictoryView
 		Parent = panel,
 	})
 
+	self.Friends = Theme.create("Frame", {
+		Name = "Friends",
+		BackgroundTransparency = 1,
+		AnchorPoint = Vector2.new(0.5, 0),
+		Position = UDim2.new(0.5, 0, 0.5, PANEL_HEIGHT / 2 + 12),
+		Size = UDim2.fromOffset(440, 50),
+		Parent = root,
+	}, {
+		Theme.create("UIGridLayout", {
+			CellSize = UDim2.fromOffset(140, 50),
+			CellPadding = UDim2.fromOffset(10, 8),
+			HorizontalAlignment = Enum.HorizontalAlignment.Center,
+			SortOrder = Enum.SortOrder.LayoutOrder,
+		}),
+	}) :: Frame
+
+	self.RewardLines = {}
+	self.Rewards = Theme.create("Frame", {
+		Name = "Rewards",
+		BackgroundTransparency = 1,
+		Position = UDim2.fromOffset(0, 174),
+		Size = UDim2.new(1, 0, 0, 84),
+		Parent = panel,
+	}, {
+		Theme.create("UIListLayout", {
+			HorizontalAlignment = Enum.HorizontalAlignment.Center,
+			Padding = UDim.new(0, 4),
+			SortOrder = Enum.SortOrder.LayoutOrder,
+		}),
+	}) :: Frame
+
+	self.Series = Theme.text({
+		Name = "Series",
+		Text = "",
+		Font = Theme.Font.Bold,
+		TextColor3 = Theme.Color.Highlight,
+		TextSize = 16,
+		TextXAlignment = Enum.TextXAlignment.Center,
+		Position = UDim2.fromOffset(0, 148),
+		Size = UDim2.new(1, 0, 0, 20),
+		Parent = panel,
+	})
+
 	--[[
 		Randul care spune cat mai sta fereastra. O fereastra care dispare fara sa
 		fi anuntat ca dispare se citeste ca o defectiune, iar cine tocmai a
@@ -142,7 +198,7 @@ function VictoryView.new(parent: Instance): VictoryView
 
 	self.AgainButton = Theme.button({
 		Name = "Again",
-		Text = "PLAY AGAIN",
+		Text = "REMATCH",
 		Skin = "Primary",
 		Size = UDim2.fromOffset(190, 46),
 		LayoutOrder = 1,
@@ -203,11 +259,11 @@ end
 	acolo, `task.cancel` ar fi cerut chiar pe firul care ruleaza in clipa aia, si
 	Luau nu lasa un fir sa se anuleze singur.
 ]]
-function VictoryView.startTimeout(self: VictoryView)
+function VictoryView.startTimeout(self: VictoryView, seconds: number?)
 	self:stopTimeout()
 
 	self.Timer = task.spawn(function()
-		for remaining = AUTO_LEAVE_SECONDS, 1, -1 do
+		for remaining = seconds or AUTO_LEAVE_SECONDS, 1, -1 do
 			self.Countdown.Text = string.format("Back to the lobby in %d…", remaining)
 			task.wait(1)
 		end
@@ -279,7 +335,10 @@ function VictoryView.show(self: VictoryView, state: BoardState, localSlot: numbe
 		end
 	end
 
-	Theme.setButtonEnabled(self.AgainButton, hasOpponent)
+	if opening then
+		self:setRematch("IDLE")
+	end
+	Theme.setButtonEnabled(self.AgainButton, hasOpponent and self.Phase == "IDLE")
 	if not hasOpponent then
 		self.Detail.Text ..= "  The other players have left."
 	end
@@ -292,16 +351,124 @@ function VictoryView.show(self: VictoryView, state: BoardState, localSlot: numbe
 	self.Root.BackgroundTransparency = 1
 	AnimationController.tween(self.Root, { BackgroundTransparency = 0.35 }, 0.35, "fade")
 
-	self.Panel.Size = UDim2.fromOffset(420, 280)
+	self.Panel.Size = UDim2.fromOffset(420, PANEL_HEIGHT - 20)
 	AnimationController.tween(
 		self.Panel,
-		{ Size = UDim2.fromOffset(420, 300) },
+		{ Size = UDim2.fromOffset(420, PANEL_HEIGHT) },
 		0.3,
 		"size",
 		Enum.EasingStyle.Back
 	)
 
 	self:startTimeout()
+	self:animateRewards()
+end
+
+--[[
+	Deseneaza randurile recompensei, fiecare cu un mic salt, unul dupa altul.
+	Pe baza cu culoarea textului, pe bonusuri cu auriu: se vede dintr-o privire
+	ce ai primit in plus pentru ca ai jucat cu prietenii sau esti in grup.
+]]
+function VictoryView.animateRewards(self: VictoryView)
+	for _, child in self.Rewards:GetChildren() do
+		if child:IsA("TextLabel") then
+			child:Destroy()
+		end
+	end
+
+	for index, line in self.RewardLines do
+		if type(line) ~= "table" or type(line.Coins) ~= "number" then
+			continue
+		end
+		local bonus = line.Kind == "Group" or line.Kind == "Friend"
+		local label = Theme.text({
+			Name = "Line",
+			Text = string.format("%s  +%d", tostring(line.Label), line.Coins),
+			Font = if bonus then Theme.Font.Bold else Theme.Font.Medium,
+			TextColor3 = if bonus then Theme.Color.Highlight else Theme.Color.Text,
+			TextSize = if bonus then 16 else 18,
+			TextXAlignment = Enum.TextXAlignment.Center,
+			Size = UDim2.new(1, 0, 0, 22),
+			LayoutOrder = index,
+			TextTransparency = 1,
+			Parent = self.Rewards,
+		})
+		local scale = Theme.create("UIScale", { Scale = 0.6, Parent = label }) :: UIScale
+		task.delay(0.25 + (index - 1) * 0.3, function()
+			if label.Parent then
+				AnimationController.tween(label, { TextTransparency = 0 }, 0.2, "fade")
+				AnimationController.tween(scale, { Scale = 1 }, 0.35, "pop", Enum.EasingStyle.Back)
+			end
+		end)
+	end
+end
+
+--[[
+	Recompensa meciului, venita de la server. Se arata cand se deschide
+	panoul; daca e deja deschis, pe loc.
+]]
+function VictoryView.setRewards(self: VictoryView, lines: { any })
+	self.RewardLines = lines
+	if self.Root.Visible then
+		self:animateRewards()
+	end
+end
+
+--[[
+	Butoanele ADD FRIEND, cate unul pe adversar. `people` vine fara cei care iti
+	sunt deja prieteni. Butonul ramane cum e dupa apasare: fereastra Roblox se
+	poate inchide si fara cerere, iar de aici nu se afla ce s-a ales.
+]]
+function VictoryView.setFriends(self: VictoryView, people: { { UserId: number, Name: string } })
+	for _, child in self.Friends:GetChildren() do
+		if child:IsA("GuiButton") then
+			child:Destroy()
+		end
+	end
+
+	for index, person in people do
+		local button = Theme.button({
+			Name = "Add_" .. person.UserId,
+			Text = "ADD " .. string.upper(person.Name),
+			Skin = "Secondary",
+			TextSize = 13,
+			TextTruncate = Enum.TextTruncate.AtEnd,
+			LayoutOrder = index,
+			Parent = self.Friends,
+		})
+		button.MouseButton1Click:Connect(function()
+			local callback = self.Callbacks.onAddFriend
+			if callback then
+				callback(person.UserId)
+			end
+		end)
+	end
+end
+
+-- Randul seriei: „Rematch #3 · 2–1", sau nimic la primul meci dintre ei.
+function VictoryView.setSeries(self: VictoryView, label: string?)
+	self.Series.Text = label or ""
+end
+
+--[[
+	Butonul de revansa, dupa cum sta votul.
+
+	  "IDLE"    — se poate cere
+	  "WAITING" — ai cerut sau ai acceptat; numaratoarea spre lobby sta pe loc
+	  "CLOSED"  — votul s-a inchis; la masa asta nu se mai cere alta
+]]
+function VictoryView.setRematch(self: VictoryView, phase: "IDLE" | "WAITING" | "CLOSED")
+	self.Phase = phase
+	if phase == "WAITING" then
+		self.AgainButton.Text = "WAITING…"
+		Theme.setButtonEnabled(self.AgainButton, false)
+		self:stopTimeout()
+	elseif phase == "CLOSED" then
+		self.AgainButton.Text = "REMATCH"
+		Theme.setButtonEnabled(self.AgainButton, false)
+	else
+		self.AgainButton.Text = "REMATCH"
+	end
 end
 
 --[[

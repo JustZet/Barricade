@@ -26,6 +26,7 @@ Rojo merge într-un singur sens: de la fișiere spre Studio.
 
 | Pe disc | În Studio |
 |---|---|
+| `src/boot/` | `ReplicatedFirst.Boot` |
 | `src/shared/` | `ReplicatedStorage.Shared` |
 | `src/world/` | `ReplicatedStorage.World` |
 | `src/server/` | `ServerScriptService.Server` |
@@ -33,6 +34,22 @@ Rojo merge într-un singur sens: de la fișiere spre Studio.
 
 Interfața 2D se construiește **din cod**, nu din obiecte făcute în Studio. Nu există
 `StarterGui` gestionat manual. `Remotes` se creează la boot din `Remotes.build()`.
+
+## De ce există `src/boot/`
+
+Tot ce stă în `StarterPlayerScripts` rulează **după** ce Roblox și-a strâns ecranul lui
+de încărcare și ți-a arătat lumea. O cortină pusă acolo vine mereu prea târziu: apare
+peste ceva ce s-a văzut deja apărând bucată cu bucată. `ReplicatedFirst` rulează
+înainte de primul cadru, și de aceea ecranul de încărcare pleacă de acolo.
+
+Ordinea din `src/boot/init.client.luau` nu e întâmplătoare: ecranul nostru se
+construiește **cât timp al Roblox-ului e încă pe ecran**, și abia apoi se cheamă
+`RemoveDefaultLoadingScreen`. Invers, ar exista o clipă în care nu acoperă nimeni
+nimic.
+
+Cortina se ridică la un atribut scris de client (`BarricadeClientReady`), nu la un
+remote: nimic nu iese din clientul ăsta, deci n-are ce căuta în `Remotes`. Numele
+trebuie să rămână la fel în amândouă fișierele — e singurul lor punct de atingere.
 
 ## Dar lumea 3D nu e pe disc
 
@@ -97,7 +114,7 @@ lumii: zidul cade pe tablă, urmează cursorul, se leagănă în vitrină — ia
 
 ```bash
 stylua src/ tests/ tools/    # formatează
-lune run tools/check         # cele cinci verificări, inclusiv 108/108 teste
+lune run tools/check         # cele cinci verificări, inclusiv 170/170 teste
 ```
 
 `tools/check` rulează `stylua --check`, `selene`, testele, `rojo sourcemap` și
@@ -146,5 +163,5 @@ falsificate, ca să ruleze în afara Roblox-ului. Citește toate sursele o singu
 
 Când adaugi o regulă, adaugi și testul. Testele existente acoperă geometria, conflictele
 de baricade, săritura peste pion în toate variantele, interdicția de a îngropa un
-jucător, ordinea turelor, victoria pe fiecare mod, retragerea la deconectare și
-serializarea stării.
+jucător, ordinea turelor, victoria pe fiecare mod, retragerea la deconectare,
+serializarea stării și fiecare callout din `MoveCommentary`, cu cazul lui negativ.

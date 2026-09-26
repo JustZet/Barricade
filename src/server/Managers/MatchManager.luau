@@ -7,6 +7,9 @@
 	perechea jucator-meci, ca sa nu existe doua adevaruri.
 ]]
 
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RematchVote = require(ReplicatedStorage.Shared.RematchVote)
+
 local Match = require(script.Parent.Match)
 
 type Match = Match.Match
@@ -16,8 +19,14 @@ local MatchManager = {}
 local matches: { [string]: Match } = {}
 local matchByUserId: { [number]: Match } = {}
 
-function MatchManager.create(modeId: string, players: { Player }, origin: CFrame?): Match
-	local match = Match.new(modeId, players, origin)
+-- `series` vine doar de la o revansa: seria meciului dinainte, dusa mai departe.
+function MatchManager.create(
+	modeId: string,
+	players: { Player },
+	origin: CFrame?,
+	series: RematchVote.Series?
+): Match
+	local match = Match.new(modeId, players, origin, series)
 
 	matches[match.Id] = match
 	for _, player in players do

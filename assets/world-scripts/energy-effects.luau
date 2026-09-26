@@ -324,8 +324,8 @@ for _, core in cores do
 		local light = Instance.new("PointLight")
 		light.Name = "Emitter"
 		light.Color = COOL
-		light.Range = 18
-		light.Brightness = 1
+		light.Range = 10
+		light.Brightness = 0.4
 		light.Shadows = false
 		light.Parent = core
 		table.insert(lamps, light)
@@ -370,7 +370,7 @@ for _, dot in collect("^particle_%d+$") do
 	emitter.Acceleration = Vector3.new(0, 1.2, 0)
 	emitter.Rotation = NumberRange.new(0, 360)
 	emitter.RotSpeed = NumberRange.new(-80, 80)
-	emitter.LightEmission = 1
+	emitter.LightEmission = 0.5
 	emitter.LightInfluence = 0
 	emitter.Rate = 6
 	emitter.Parent = dot
@@ -399,7 +399,7 @@ for _, core in cores do
 	emitter.Speed = NumberRange.new(4, 9)
 	emitter.SpreadAngle = Vector2.new(180, 180)
 	emitter.Drag = 3
-	emitter.LightEmission = 1
+	emitter.LightEmission = 0.5
 	emitter.LightInfluence = 0
 	emitter.Rate = 0
 	emitter.Parent = core
@@ -535,7 +535,7 @@ RunService.Heartbeat:Connect(function(delta: number)
 		end
 	end
 	for _, lamp in lamps do
-		lamp.Brightness = 1 + pulse * 1.2 + wave * 4
+		lamp.Brightness = 0.4 + pulse * 0.45 + wave * 1.4
 		lamp.Color = COOL:Lerp(HOT, wave)
 	end
 

@@ -1119,7 +1119,7 @@ end)
 
 describe("Numaratoarea de free play", function()
 	local FreePlayRules = Shared.FreePlayRules
-	local MIN, CAP = GameConfig.FreePlay.Minimum, GameConfig.Modes[GameConfig.FreePlay.Mode].Players
+	local MIN, CAP = FreePlayRules.bounds(GameConfig.FreePlay.Modes)
 
 	local function decide(waiting: number, remaining: number): string
 		return FreePlayRules.decide(waiting, MIN, CAP, remaining)
@@ -1160,6 +1160,28 @@ describe("Numaratoarea de free play", function()
 			assertEqual(decide(waiting, 5), "WAIT", "sub minim, cu ceas")
 		end
 	end)
+
+	it("primeste de la doi pana la patru jucatori", function()
+		assertEqual(MIN, 2, "minimul")
+		assertEqual(CAP, 4, "cati incap")
+	end)
+
+	it("alege modul dupa cati s-au strans", function()
+		local modes = GameConfig.FreePlay.Modes
+		assertEqual(FreePlayRules.modeFor(modes, 0), nil, "nimeni")
+		assertEqual(FreePlayRules.modeFor(modes, 1), nil, "unul singur")
+		assertEqual(FreePlayRules.modeFor(modes, 2), "1v1", "doi")
+		assertEqual(FreePlayRules.modeFor(modes, 3), "1v1v1", "trei")
+		assertEqual(FreePlayRules.modeFor(modes, 4), "1v1v1v1", "patru")
+	end)
+
+	it("trimite la centru pe toti cand sunt trei sau patru", function()
+		for _, modeId in { "1v1v1", "1v1v1v1" } do
+			for slot, config in GameConfig.Modes[modeId].Slots do
+				assertEqual(config.Objective.Kind, "CENTER", modeId .. " slot " .. slot)
+			end
+		end
+	end)
 end)
 
 describe("Banutii de la finalul meciului", function()
@@ -1189,6 +1211,872 @@ describe("Banutii de la finalul meciului", function()
 	it("fara castigator, toata lumea iese pe pierdere", function()
 		assertEqual(Rewards.outcomeFor(nil, 1), "LOSS", "meci anulat")
 		assertEqual(Rewards.outcomeFor(nil, 2), "LOSS", "meci anulat, cealalta echipa")
+	end)
+end)
+
+-- ---------------------------------------------------------- comentariul
+
+describe("Comentariul mutarilor", function()
+	local MoveCommentary = Shared.MoveCommentary
+	local Callouts = Shared.Callouts
+	local SETTINGS = GameConfig.Callouts
+
+	--[[
+		O stare cu pionii unde ii vreau si baricadele date, fara ture. Analizorul
+		nu verifica legalitatea — primeste actiuni deja aplicate — deci testele
+		lui pot aseza tabla direct.
+	]]
+	local function board(
+		mode: string,
+		positions: { [number]: { number } },
+		walls: { { any } }?
+	): any
+		local state = newMatch(mode)
+		for slot, at in positions do
+			state.Players[slot].Position = { X = at[1], Y = at[2] }
+		end
+		for _, w in walls or {} do
+			seedWall(state, w[1], w[2], w[3])
+		end
+		return state
+	end
+
+	local function ids(callouts: { any }): string
+		local list = {}
+		for _, callout in callouts do
+			table.insert(list, callout.Id)
+		end
+		return table.concat(list, ",")
+	end
+
+	local function has(callouts: { any }, id: string): any
+		for _, callout in callouts do
+			if callout.Id == id then
+				return callout
+			end
+		end
+		return nil
+	end
+
+	local function distance(state: any, slot: number): number?
+		local _, steps = Pathfinding.hasPathToGoal(state, slot)
+		return steps
+	end
+
+	local function wallAction(slot: number, x: number, y: number, orientation: string): any
+		return { Kind = "Wall", Slot = slot, Wall = { X = x, Y = y, Orientation = orientation } }
+	end
+
+	local function moveAction(slot: number, from: { number }, to: { number }): any
+		return {
+			Kind = "Move",
+			Slot = slot,
+			From = { X = from[1], Y = from[2] },
+			To = { X = to[1], Y = to[2] },
+		}
+	end
+
+	-- 1v1: slotul 2 sta pe (5,9) si coboara. Baricadele stau sub el, pe randul 8.
+	local function blockAgainstTwo(walls: { { any } }): { any }
+		local before = board("1v1", {})
+		local after = board("1v1", {}, walls)
+		local last = walls[#walls]
+		return MoveCommentary.analyze(before, after, wallAction(1, last[1], last[2], last[3]))
+	end
+
+	it("un pas in plus nu e blocaj", function()
+		local walls = { { 5, 8, "Horizontal" }, { 7, 8, "Horizontal" } }
+		assertEqual(distance(board("1v1", {}, walls), 2), 9, "chiar un pas in plus")
+		assertEqual(ids(blockAgainstTwo(walls)), "", "+1")
+	end)
+
+	it("BLOCK la doi pasi, pe baricada, cu tinta si numar", function()
+		local out = blockAgainstTwo({ { 4, 8, "Horizontal" }, { 6, 8, "Horizontal" } })
+		local block = has(out, "BLOCK")
+		assertTrue(block ~= nil, "BLOCK: " .. ids(out))
+		assertEqual(block.Amount, 2, "cati pasi")
+		assertEqual(block.Target, 2, "pe cine")
+		assertEqual(block.Slot, 1, "cine")
+		assertEqual(block.Tier, 1, "marimea")
+		assertTrue(
+			block.Wall ~= nil and block.Wall.X == 6 and block.Wall.Y == 8,
+			"asezat pe baricada"
+		)
+	end)
+
+	it("BLOCK_BIG la trei, BLOCK_HUGE la patru, BLOCK_MEGA la sase", function()
+		local big = blockAgainstTwo({
+			{ 3, 8, "Horizontal" },
+			{ 5, 8, "Horizontal" },
+			{ 7, 8, "Horizontal" },
+		})
+		assertEqual(ids(big), "BLOCK_BIG", "+3")
+		assertEqual(big[1].Amount, 3, "+3 numarul")
+
+		local huge = blockAgainstTwo({
+			{ 1, 8, "Horizontal" },
+			{ 3, 8, "Horizontal" },
+			{ 5, 8, "Horizontal" },
+			{ 7, 8, "Horizontal" },
+		})
+		assertEqual(ids(huge), "BLOCK_HUGE", "+4")
+		assertEqual(huge[1].Tier, 3, "+4 e epic")
+
+		local mega = blockAgainstTwo({
+			{ 1, 8, "Horizontal" },
+			{ 3, 8, "Horizontal" },
+			{ 5, 8, "Horizontal" },
+			{ 7, 8, "Horizontal" },
+			{ 8, 7, "Horizontal" },
+		})
+		assertEqual(ids(mega), "BLOCK_MEGA", "+6")
+		assertEqual(mega[1].Amount, 6, "+6 numarul")
+	end)
+
+	it("in 2v2 blocarea coechipierului nu e BLOCK", function()
+		-- Slotul 2 e coechipierul lui 1 si sta pe (4,1); zidul il abate doi pasi.
+		local before = board("2v2", {})
+		local after = board("2v2", {}, { { 2, 1, "Horizontal" }, { 4, 1, "Horizontal" } })
+		assertEqual(distance(after, 2), 10, "coechipierul chiar a fost abatut")
+		local out = MoveCommentary.analyze(before, after, wallAction(1, 4, 1, "Horizontal"))
+		assertEqual(ids(out), "", "fara blocaj")
+	end)
+
+	--[[
+		1v1v1v1, totul spre centru. Deasupra centrului e deja o baricada; cea noua,
+		verticala in dreapta lui, il abate pe 2 cu patru pasi si pe 3 cu doi.
+	]]
+	local function doubleBlock(remaining: number): { any }
+		local before = board("1v1v1v1", {}, { { 4, 5, "Horizontal" } })
+		local after = board("1v1v1v1", {}, { { 4, 5, "Horizontal" }, { 5, 4, "Vertical" } })
+		after.Players[1].BarricadesRemaining = remaining
+		return MoveCommentary.analyze(before, after, wallAction(1, 5, 4, "Vertical"))
+	end
+
+	it("DOUBLE_BLOCK cand o baricada ii incetineste pe doi", function()
+		local out = doubleBlock(3)
+		assertTrue(has(out, "DOUBLE_BLOCK") ~= nil, "DOUBLE_BLOCK: " .. ids(out))
+		assertEqual(has(out, "BLOCK_HUGE").Target, 2, "cel mai lovit e 2")
+	end)
+
+	it("un singur adversar incetinit nu e DOUBLE_BLOCK", function()
+		local out = blockAgainstTwo({
+			{ 1, 8, "Horizontal" },
+			{ 3, 8, "Horizontal" },
+			{ 5, 8, "Horizontal" },
+			{ 7, 8, "Horizontal" },
+		})
+		assertTrue(has(out, "DOUBLE_BLOCK") == nil, "doar unul")
+	end)
+
+	it("ordonat dupa prioritate si taiat la MaxPerAction", function()
+		local out = doubleBlock(0)
+		assertEqual(#out, SETTINGS.MaxPerAction, "taiat")
+		assertEqual(ids(out), "BLOCK_HUGE,DOUBLE_BLOCK", "ordinea, fara LAST_WALL")
+		for index = 2, #out do
+			assertTrue(
+				Callouts.All[out[index - 1].Id].Priority >= Callouts.All[out[index].Id].Priority,
+				"prioritate descrescatoare"
+			)
+		end
+	end)
+
+	it("LAST_WALL doar cand a pus ultima baricada", function()
+		local before = board("1v1", {})
+		local after = board("1v1", {}, { { 1, 1, "Horizontal" } })
+		local action = wallAction(1, 1, 1, "Horizontal")
+		after.Players[1].BarricadesRemaining = 0
+		assertEqual(ids(MoveCommentary.analyze(before, after, action)), "LAST_WALL", "ultima")
+
+		after.Players[1].BarricadesRemaining = 1
+		assertEqual(ids(MoveCommentary.analyze(before, after, action)), "", "mai are")
+	end)
+
+	it("JUMP la saritura dreapta, SIDESTEP la cea in diagonala, nimic la un pas", function()
+		local before = board("1v1", { [1] = { 5, 3 }, [2] = { 5, 4 } })
+
+		local jumped = board("1v1", { [1] = { 5, 5 }, [2] = { 5, 4 } })
+		local out = MoveCommentary.analyze(before, jumped, moveAction(1, { 5, 3 }, { 5, 5 }))
+		assertTrue(has(out, "JUMP") ~= nil, "JUMP: " .. ids(out))
+		assertTrue(has(out, "SIDESTEP") == nil, "saritura dreapta nu e SIDESTEP")
+		assertEqual(has(out, "JUMP").Cell.Y, 5, "deasupra pionului, unde a aterizat")
+		assertEqual(has(out, "JUMP").Target, 2, "peste cine a sarit")
+
+		local side = board("1v1", { [1] = { 6, 4 }, [2] = { 5, 4 } }, { { 4, 4, "Horizontal" } })
+		out = MoveCommentary.analyze(before, side, moveAction(1, { 5, 3 }, { 6, 4 }))
+		assertTrue(has(out, "SIDESTEP") ~= nil, "SIDESTEP: " .. ids(out))
+		assertTrue(has(out, "JUMP") == nil, "diagonala nu e JUMP")
+
+		local step = board("1v1", { [1] = { 4, 3 }, [2] = { 5, 4 } })
+		out = MoveCommentary.analyze(before, step, moveAction(1, { 5, 3 }, { 4, 3 }))
+		assertTrue(has(out, "JUMP") == nil and has(out, "SIDESTEP") == nil, "un pas simplu")
+	end)
+
+	it("ONE_STEP cand ajunge la un pas, nu si cand era deja acolo", function()
+		local before = board("1v1", { [1] = { 5, 7 } })
+		local after = board("1v1", { [1] = { 5, 8 } })
+		local out = MoveCommentary.analyze(before, after, moveAction(1, { 5, 7 }, { 5, 8 }))
+		assertTrue(has(out, "ONE_STEP") ~= nil, "ONE_STEP: " .. ids(out))
+		assertEqual(has(out, "ONE_STEP").Tier, 3, "epic")
+
+		local already = board("1v1", { [1] = { 4, 8 } })
+		out = MoveCommentary.analyze(already, after, moveAction(1, { 4, 8 }, { 5, 8 }))
+		assertTrue(has(out, "ONE_STEP") == nil, "de-a lungul randului 8")
+
+		local twoAway = board("1v1", { [1] = { 5, 7 } })
+		out = MoveCommentary.analyze(
+			board("1v1", { [1] = { 5, 6 } }),
+			twoAway,
+			moveAction(1, { 5, 6 }, { 5, 7 })
+		)
+		assertTrue(has(out, "ONE_STEP") == nil, "la doi pasi")
+	end)
+
+	--[[
+		1 pe (1,4) are cinci pasi, 2 pe (9,5) are patru. O baricada sub 2 il duce
+		la sase: 1 trece din urma in fata.
+	]]
+	local function overtake(history: any): { any }
+		local before = board("1v1", { [1] = { 1, 4 }, [2] = { 9, 5 } })
+		local after = board("1v1", { [1] = { 1, 4 }, [2] = { 9, 5 } }, { { 8, 4, "Horizontal" } })
+		return MoveCommentary.analyze(before, after, wallAction(1, 8, 4, "Horizontal"), history)
+	end
+
+	it("TAKE_LEAD la o depasire, nu la simplul avantaj de tempo", function()
+		local out = overtake(nil)
+		assertTrue(has(out, "TAKE_LEAD") ~= nil, "TAKE_LEAD: " .. ids(out))
+
+		-- Amandoi la opt; 1 muta si e la sapte. Asta nu e o depasire.
+		local before = newMatch("1v1")
+		local after = board("1v1", { [1] = { 5, 2 } })
+		out = MoveCommentary.analyze(before, after, moveAction(1, { 5, 1 }, { 5, 2 }))
+		assertEqual(ids(out), "", "primul pas al meciului")
+	end)
+
+	it("COMEBACK de la trei pasi in urma, in locul lui TAKE_LEAD", function()
+		local walls = { { 8, 4, "Horizontal" }, { 6, 4, "Horizontal" } }
+		local before = board("1v1", { [1] = { 1, 2 }, [2] = { 9, 5 } })
+		local after = board("1v1", { [1] = { 1, 2 }, [2] = { 9, 5 } }, walls)
+		local out = MoveCommentary.analyze(before, after, wallAction(1, 6, 4, "Horizontal"))
+		assertTrue(has(out, "COMEBACK") ~= nil, "COMEBACK: " .. ids(out))
+		assertTrue(has(out, "TAKE_LEAD") == nil, "nu amandoua")
+	end)
+
+	it("COMEBACK si din istorie, cand revenirea a venit in mai multe ture", function()
+		local history = MoveCommentary.newHistory()
+		history.Deficit[1] = 3
+		assertTrue(has(overtake(history), "COMEBACK") ~= nil, "cu istorie")
+		assertTrue(has(overtake(nil), "COMEBACK") == nil, "fara istorie e doar TAKE_LEAD")
+	end)
+
+	it("istoria tine cel mai mare deficit si il sterge la egalitate", function()
+		local history = MoveCommentary.newHistory()
+		MoveCommentary.record(history, board("1v1", { [1] = { 1, 2 }, [2] = { 9, 5 } }), {})
+		assertEqual(history.Deficit[1], 3, "trei in urma")
+		MoveCommentary.record(history, board("1v1", { [1] = { 1, 4 }, [2] = { 9, 5 } }), {})
+		assertEqual(history.Deficit[1], 3, "ramane cel mai rau")
+		MoveCommentary.record(history, board("1v1", { [1] = { 1, 5 }, [2] = { 9, 5 } }), {})
+		assertEqual(history.Deficit[1], nil, "egalitate")
+	end)
+
+	it("NECK_AND_NECK o singura data, cand toti ajung aproape si la egalitate", function()
+		local before = board("1v1", { [1] = { 1, 5 }, [2] = { 9, 4 } })
+		local after = board("1v1", { [1] = { 1, 6 }, [2] = { 9, 4 } })
+		local action = moveAction(1, { 1, 5 }, { 1, 6 })
+		local out = MoveCommentary.analyze(before, after, action)
+		assertTrue(has(out, "NECK_AND_NECK") ~= nil, "NECK_AND_NECK: " .. ids(out))
+
+		local steady = board("1v1", { [1] = { 2, 6 }, [2] = { 9, 4 } })
+		out = MoveCommentary.analyze(after, steady, moveAction(1, { 1, 6 }, { 2, 6 }))
+		assertTrue(has(out, "NECK_AND_NECK") == nil, "era deja")
+
+		local history = MoveCommentary.newHistory()
+		history.Shown.NECK_AND_NECK = true
+		out = MoveCommentary.analyze(before, after, action, history)
+		assertTrue(has(out, "NECK_AND_NECK") == nil, "s-a strigat deja")
+	end)
+
+	it("UNSTOPPABLE cand adversarii n-au baricade si el trece in fata", function()
+		local before = board("1v1", { [1] = { 1, 5 }, [2] = { 9, 5 } })
+		local after = board("1v1", { [1] = { 1, 6 }, [2] = { 9, 5 } })
+		before.Players[2].BarricadesRemaining = 0
+		after.Players[2].BarricadesRemaining = 0
+		local action = moveAction(1, { 1, 5 }, { 1, 6 })
+		assertTrue(
+			has(MoveCommentary.analyze(before, after, action), "UNSTOPPABLE") ~= nil,
+			"UNSTOPPABLE"
+		)
+
+		after.Players[2].BarricadesRemaining = 1
+		assertTrue(
+			has(MoveCommentary.analyze(before, after, action), "UNSTOPPABLE") == nil,
+			"adversarul mai are"
+		)
+	end)
+
+	it("nu striga nimic dupa mutarea castigatoare", function()
+		local before = board("1v1", { [1] = { 5, 8 } })
+		local after = board("1v1", { [1] = { 5, 9 }, [2] = { 1, 9 } })
+		after.Status = "FINISHED"
+		assertEqual(
+			ids(MoveCommentary.analyze(before, after, moveAction(1, { 5, 8 }, { 5, 9 }))),
+			"",
+			"final"
+		)
+	end)
+
+	--[[
+		Seria de blocaje: acelasi blocaj de +2 dat de trei ori la rand de slotul 1,
+		cu o mutare intre ele ca sa se vada cum cade.
+	]]
+	it("seria de blocaje creste la rand si cade la prima actiune fara blocaj", function()
+		local history = MoveCommentary.newHistory()
+		local walls = { { 4, 8, "Horizontal" }, { 6, 8, "Horizontal" } }
+		local function blockOnce(): any
+			local before = board("1v1", {})
+			local after = board("1v1", {}, walls)
+			local out =
+				MoveCommentary.analyze(before, after, wallAction(1, 6, 8, "Horizontal"), history)
+			MoveCommentary.record(history, after, out, 1)
+			return has(out, "BLOCK")
+		end
+
+		assertEqual(blockOnce().Streak, nil, "primul blocaj nu e serie")
+		assertEqual(blockOnce().Streak, 2, "al doilea: x2")
+		assertEqual(blockOnce().Streak, 3, "al treilea: x3")
+		assertEqual(history.Streak[1], 3, "istoria tine seria")
+
+		local still = board("1v1", { [1] = { 4, 1 } })
+		local moved = MoveCommentary.analyze(
+			board("1v1", {}),
+			still,
+			moveAction(1, { 5, 1 }, { 4, 1 }),
+			history
+		)
+		MoveCommentary.record(history, still, moved, 1)
+		assertEqual(history.Streak[1], 0, "o mutare rupe seria")
+		assertEqual(blockOnce().Streak, nil, "de la capat")
+	end)
+
+	it("seria unuia nu se amesteca cu a celuilalt", function()
+		local history = MoveCommentary.newHistory()
+		history.Streak[1] = 4
+		MoveCommentary.record(history, board("1v1", {}), {}, 2)
+		assertEqual(history.Streak[1], 4, "actiunea lui 2 nu atinge seria lui 1")
+		assertEqual(history.Streak[2], 0, "2 n-a blocat")
+	end)
+end)
+
+describe("Catalogul de callout-uri", function()
+	local Callouts = Shared.Callouts
+
+	it("fiecare intrare e intreaga", function()
+		for id, entry in Callouts.All do
+			assertEqual(entry.Id, id, id .. ": id-ul")
+			assertTrue(entry.Tier >= 1 and entry.Tier <= 3, id .. ": marimea")
+			assertTrue(
+				GameConfig.Sounds[entry.Sound] ~= nil,
+				id .. ": sunetul exista in GameConfig.Sounds"
+			)
+			for _, extra in { entry.VictimSound, entry.OtherSound } do
+				assertTrue(GameConfig.Sounds[extra] ~= nil, id .. ": " .. extra .. " exista")
+			end
+			assertEqual(#entry.Colors, 2, id .. ": doua culori")
+		end
+	end)
+
+	it("sunetul se alege dupa perspectiva", function()
+		local block = { Id = "BLOCK_HUGE", Slot = 1, Target = 2, Amount = 4 }
+		assertEqual(Callouts.format(block, 1, "Ana").Sound, "CalloutEpic", "autorul: combo")
+		assertEqual(Callouts.format(block, 2, "Ana").Sound, "CalloutBlocked", "victima: Fuhhhh")
+		assertEqual(Callouts.format(block, 3, "Ana").Sound, "CalloutEpic", "martorul: combo")
+
+		local close = { Id = "ONE_STEP", Slot = 1 }
+		assertEqual(Callouts.format(close, 1, "Ana").Sound, "CalloutEpic", "tu esti la un pas")
+		assertEqual(Callouts.format(close, 2, "Ana").Sound, "CalloutOhNo", "adversarul e la un pas")
+		assertEqual(
+			Callouts.format(close, 2, "Ana", true).Sound,
+			"CalloutEpic",
+			"coechipierul e la un pas"
+		)
+
+		assertEqual(
+			Callouts.format({ Id = "BLOCK_MEGA", Slot = 1, Amount = 6 }, 1, "Ana").Sound,
+			"CalloutPerfect",
+			"perfect"
+		)
+		assertEqual(
+			Callouts.format({ Id = "JUMP", Slot = 1, Target = 2 }, 2, "Ana").Sound,
+			"CalloutOhNo",
+			"sarit peste tine"
+		)
+	end)
+
+	it("perspectiva schimba textul si culorile", function()
+		local callout = { Id = "BLOCK_HUGE", Slot = 1, Target = 2, Amount = 4 }
+
+		local mine = Callouts.format(callout, 1, "Ana")
+		assertEqual(mine.Perspective, "AUTHOR", "autorul")
+		assertEqual(mine.Prefix, "HUGE BLOCK! +", "textul autorului")
+		assertEqual(mine.Amount, 4, "numarul")
+
+		local theirs = Callouts.format(callout, 2, "Ana")
+		assertEqual(theirs.Perspective, "VICTIM", "victima")
+		assertEqual(theirs.Prefix, "YOU'RE BLOCKED! +", "textul victimei")
+		assertEqual(theirs.Colors, Callouts.VictimColors, "paleta rece")
+
+		local other = Callouts.format({ Id = "ONE_STEP", Slot = 1 }, 3, "Ana%1")
+		assertEqual(other.Prefix, "ANA%1: ONE STEP AWAY!", "numele, intreg")
+		assertEqual(other.Amount, nil, "fara numar")
+	end)
+
+	it("un id necunoscut se sare", function()
+		assertEqual(Callouts.format({ Id = "NOPE", Slot = 1 }, 1, "Ana"), nil, "necunoscut")
+		assertEqual(Callouts.format({ Id = "BLOCK", Slot = "1" }, 1, "Ana"), nil, "slot stricat")
+	end)
+end)
+
+-- --------------------------------------------------------------- revansa
+
+describe("Votul de revansa", function()
+	local RematchVote = Shared.RematchVote
+	local WINDOW = 10
+
+	it("porneste acceptat de cel care cere", function()
+		local vote = RematchVote.open({ 11, 22 }, 11, 0, WINDOW)
+		assertEqual(vote.Status, "Pending", "deschis")
+		assertTrue(vote.Accepted[11], "cel care cere a zis da")
+		local count, left = RematchVote.progress(vote, 3)
+		assertEqual(count, 1, "un da")
+		assertEqual(left, 7, "timpul ramas")
+	end)
+
+	it("nu se deschide de cineva din afara mesei sau de unul singur", function()
+		local vote, reason = RematchVote.open({ 11, 22 }, 99, 0, WINDOW)
+		assertEqual(vote, nil, "strain")
+		assertEqual(reason, "NOT_SEATED", "motivul")
+		local alone, why = RematchVote.open({ 11 }, 11, 0, WINDOW)
+		assertEqual(alone, nil, "singur")
+		assertEqual(why, "ALONE", "motivul")
+	end)
+
+	it("toti accepta: Accepted", function()
+		local vote = RematchVote.open({ 11, 22 }, 11, 0, WINDOW)
+		assertTrue(RematchVote.accept(vote, 22, 4), "al doilea da")
+		assertEqual(vote.Status, "Accepted", "gata")
+	end)
+
+	it("unul refuza: Cancelled, cu motiv si vinovat", function()
+		local vote = RematchVote.open({ 11, 22 }, 11, 0, WINDOW)
+		assertTrue(RematchVote.decline(vote, 22, 2), "refuz")
+		assertEqual(vote.Status, "Cancelled", "anulat")
+		assertEqual(vote.Reason, "DECLINED", "motivul")
+		assertEqual(vote.By, 22, "cine")
+		assertFalse(RematchVote.accept(vote, 22, 3), "dupa anulare nu mai conteaza nimic")
+	end)
+
+	it("unul pleaca: Cancelled, chiar daca acceptase", function()
+		local vote = RematchVote.open({ 11, 22, 33 }, 11, 0, WINDOW)
+		RematchVote.accept(vote, 22, 1)
+		assertTrue(RematchVote.leave(vote, 22, 2), "a plecat")
+		assertEqual(vote.Reason, "LEFT", "motivul")
+		assertEqual(vote.By, 22, "cine")
+	end)
+
+	it("expira la termen, iar un da venit dupa nu mai conteaza", function()
+		local vote = RematchVote.open({ 11, 22 }, 11, 0, WINDOW)
+		assertEqual(RematchVote.tick(vote, 9.9), "Pending", "inca merge")
+		local ok, reason = RematchVote.accept(vote, 22, 10)
+		assertFalse(ok, "prea tarziu")
+		assertEqual(reason, "CLOSED", "motivul")
+		assertEqual(vote.Reason, "EXPIRED", "expirat")
+	end)
+
+	it("votul dublu nu schimba nimic", function()
+		local vote = RematchVote.open({ 11, 22, 33 }, 11, 0, WINDOW)
+		assertTrue(RematchVote.accept(vote, 11, 1), "cel care a cerut, din nou")
+		assertTrue(RematchVote.accept(vote, 22, 1), "al doilea")
+		assertTrue(RematchVote.accept(vote, 22, 2), "al doilea, din nou")
+		assertEqual(vote.Status, "Pending", "tot il asteapta pe al treilea")
+		assertEqual((RematchVote.progress(vote, 2)), 2, "doi da, nu trei")
+	end)
+
+	it("un vot din afara mesei e refuzat si nu anuleaza nimic", function()
+		local vote = RematchVote.open({ 11, 22 }, 11, 0, WINDOW)
+		local ok, reason = RematchVote.accept(vote, 99, 1)
+		assertFalse(ok, "strainul nu voteaza")
+		assertEqual(reason, "NOT_SEATED", "motivul")
+		assertFalse(RematchVote.decline(vote, 99, 1), "nici nu refuza")
+		assertFalse(RematchVote.leave(vote, 99, 1), "nici nu pleaca")
+		assertEqual(vote.Status, "Pending", "votul merge mai departe")
+	end)
+
+	it("in 2v2 si in 1v1v1v1 trebuie sa accepte toti patru", function()
+		local vote = RematchVote.open({ 1, 2, 3, 4 }, 3, 0, WINDOW)
+		for _, userId in { 1, 2 } do
+			RematchVote.accept(vote, userId, 1)
+			assertEqual(vote.Status, "Pending", "inca lipseste cineva")
+		end
+		RematchVote.accept(vote, 4, 1)
+		assertEqual(vote.Status, "Accepted", "toti patru")
+	end)
+
+	it("locurile se rotesc: in 1v1 si 1v1v1v1 cu unu, in 2v2 cu o echipa", function()
+		assertEqual(table.concat(RematchVote.rotate({ "A", "B" }, 1), ","), "B,A", "1v1")
+		assertEqual(
+			table.concat(RematchVote.rotate({ "A", "B", "C", "D" }, 1), ","),
+			"B,C,D,A",
+			"patru"
+		)
+		assertEqual(
+			table.concat(RematchVote.rotate({ "A", "B", "C", "D" }, 2), ","),
+			"C,D,A,B",
+			"2v2: echipele raman"
+		)
+	end)
+
+	it("seria numara meciurile si victoriile, si se scrie de la tine", function()
+		local series = RematchVote.newSeries()
+		RematchVote.record(series, { 11 })
+		assertEqual(RematchVote.label(series, { { 11 }, { 22 } }), nil, "primul meci nu e revansa")
+		RematchVote.record(series, { 22 })
+		RematchVote.record(series, { 11 })
+		assertEqual(
+			RematchVote.label(series, { { 11 }, { 22 } }),
+			"Rematch #3 · 2–1",
+			"din partea lui 11"
+		)
+		assertEqual(
+			RematchVote.label(series, { { 22 }, { 11 } }),
+			"Rematch #3 · 1–2",
+			"din partea lui 22"
+		)
+	end)
+
+	it("in 2v2 echipa are victoriile coechipierilor", function()
+		local series = RematchVote.newSeries()
+		RematchVote.record(series, { 1, 2 })
+		RematchVote.record(series, { 1, 2 })
+		RematchVote.record(series, { 3, 4 })
+		assertEqual(
+			RematchVote.label(series, { { 1, 2 }, { 3, 4 } }),
+			"Rematch #3 · 2–1",
+			"pe echipe"
+		)
+	end)
+
+	it("votul incape in timpul cat sta masa", function()
+		local timing = GameConfig.Timing
+		assertTrue(
+			timing.VictoryReveal
+					+ timing.VictoryAutoLeave
+					+ timing.RematchWindow
+					+ timing.RematchNotice
+					+ timing.RematchResume
+				<= timing.VictoryHold,
+			"VictoryHold acopera panoul, votul, vestea si intoarcerea"
+		)
+	end)
+end)
+
+-- ------------------------------------------------------------ provocari
+
+describe("Provocarea directa", function()
+	local Challenge = Shared.Challenge
+
+	-- O cerere valida de 1v1 intre 1 si 2; testele strica cate un camp.
+	local function request(overrides: { [string]: any }?): any
+		local base = {
+			From = 1,
+			Invitees = { 2 },
+			Players = 2,
+			Present = { [1] = true, [2] = true, [3] = true, [4] = true },
+			Busy = {},
+			Engaged = {},
+			Cooldowns = {},
+			Now = 100,
+		}
+		for key, value in overrides or {} do
+			base[key] = value
+		end
+		return base
+	end
+
+	local function reason(overrides: { [string]: any }): string?
+		local _, why = Challenge.validate(request(overrides))
+		return why
+	end
+
+	it("o provocare obisnuita trece", function()
+		assertTrue((Challenge.validate(request())), "1v1 intre doi liberi")
+	end)
+
+	it("refuza ce nu se poate", function()
+		assertEqual(reason({ Invitees = { 1 } }), "SELF", "pe tine insuti")
+		assertEqual(
+			reason({ Invitees = { 2, 2 }, Players = 3 }),
+			"DUPLICATE",
+			"de doua ori acelasi"
+		)
+		assertEqual(
+			reason({ Invitees = { 2 }, Players = 4 }),
+			"WRONG_COUNT",
+			"prea putini pentru mod"
+		)
+		assertEqual(reason({ Invitees = { 9 } }), "ABSENT", "nu e in server")
+		assertEqual(reason({ Busy = { [2] = "MATCH" } }), "BUSY_MATCH", "e in meci")
+		assertEqual(reason({ Busy = { [2] = "QUEUE" } }), "BUSY_QUEUE", "e in coada")
+		assertEqual(reason({ Busy = { [1] = "QUEUE" } }), "YOU_BUSY", "tu esti in coada")
+		assertEqual(reason({ Engaged = { [1] = true } }), "YOU_ENGAGED", "ai deja o provocare")
+		assertEqual(reason({ Engaged = { [2] = true } }), "ENGAGED", "el are deja una")
+	end)
+
+	it("cooldown-ul dupa refuz tine cat trebuie", function()
+		local key = Challenge.cooldownKey(1, 2)
+		assertEqual(reason({ Cooldowns = { [key] = 130 } }), "COOLDOWN", "inca nu")
+		assertTrue((Challenge.validate(request({ Cooldowns = { [key] = 100 } }))), "a trecut")
+		assertTrue(
+			(Challenge.validate(request({ Cooldowns = { [Challenge.cooldownKey(2, 1)] = 999 } }))),
+			"cooldown-ul e pe o singura directie"
+		)
+	end)
+
+	it("toti invitatii accepta: Accepted", function()
+		local c = Challenge.new("c1", 1, { 2, 3, 4 }, "1v1v1v1", 0, 15)
+		for _, userId in { 2, 3 } do
+			assertTrue((Challenge.accept(c, userId, 1)), "da")
+			assertEqual(c.Status, "Requested", "inca lipseste cineva")
+		end
+		assertTrue((Challenge.accept(c, 3, 1)), "vot dublu, fara efect")
+		Challenge.accept(c, 4, 1)
+		assertEqual(c.Status, "Accepted", "toti trei")
+	end)
+
+	it("cel care provoaca nu voteaza, iar un strain nu poate raspunde", function()
+		local c = Challenge.new("c1", 1, { 2 }, "1v1", 0, 15)
+		local ok, why = Challenge.accept(c, 1, 1)
+		assertFalse(ok, "cel care provoaca a acceptat deja, prin cerere")
+		assertEqual(why, "NOT_INVITED", "motivul")
+		assertFalse((Challenge.decline(c, 9, 1)), "strainul nu refuza")
+		assertEqual(c.Status, "Requested", "neatinsa")
+	end)
+
+	it("un refuz inchide provocarea si porneste cooldown-ul", function()
+		local c = Challenge.new("c1", 1, { 2, 3 }, "1v1v1", 0, 15)
+		Challenge.accept(c, 2, 1)
+		assertTrue((Challenge.decline(c, 3, 2)), "nu")
+		assertEqual(c.Status, "Declined", "refuzata")
+		assertEqual(c.By, 3, "de cine")
+		local key, untilAt = Challenge.cooldownAfter(c, 2, 30)
+		assertEqual(key, Challenge.cooldownKey(1, 3), "cooldown doar fata de cel care a refuzat")
+		assertEqual(untilAt, 32, "pana cand")
+	end)
+
+	it("expira la termen, fara cooldown", function()
+		local c = Challenge.new("c1", 1, { 2 }, "1v1", 0, 15)
+		assertFalse((Challenge.accept(c, 2, 15)), "prea tarziu")
+		assertEqual(c.Status, "Expired", "expirata")
+		assertEqual((Challenge.cooldownAfter(c, 15, 30)), nil, "o provocare expirata nu e un nu")
+	end)
+
+	it("numai cel care provoaca o poate anula", function()
+		local c = Challenge.new("c1", 1, { 2 }, "1v1", 0, 15)
+		local ok, why = Challenge.cancel(c, 2, 1)
+		assertFalse(ok, "invitatul nu anuleaza")
+		assertEqual(why, "NOT_YOURS", "motivul")
+		assertTrue((Challenge.cancel(c, 1, 1)), "cel care provoaca, da")
+		assertEqual(c.Reason, "CANCELLED", "motivul inchiderii")
+	end)
+
+	it("cine devine indisponibil o inchide pentru toti", function()
+		local c = Challenge.new("c1", 1, { 2 }, "1v1", 0, 15)
+		assertFalse(Challenge.drop(c, 7, 1), "strainul nu conteaza")
+		assertTrue(Challenge.drop(c, 2, 1), "invitatul a intrat in coada")
+		assertEqual(c.Status, "Cancelled", "inchisa")
+		assertEqual(c.Reason, "UNAVAILABLE", "motivul")
+		assertEqual(table.concat(Challenge.members(c), ","), "1,2", "cine era implicat")
+	end)
+end)
+
+-- ------------------------------------------------------------ invitatii
+
+describe("Recompensa pentru invitatii", function()
+	local Referral = Shared.Referral
+	local REWARD, CAP = 100, 5
+
+	local function facts(overrides: { [string]: any }?): any
+		local base = {
+			Invitee = 20,
+			Inviter = 10,
+			InviteeIsNew = true,
+			AlreadyPaid = false,
+			InviterToday = 0,
+			Cap = CAP,
+			Reward = REWARD,
+		}
+		for key, value in overrides or {} do
+			base[key] = value
+		end
+		return base
+	end
+
+	it("jucator nou, invitat de altcineva: amandoi primesc", function()
+		local verdict = Referral.decide(facts())
+		assertEqual(verdict.InviteeCoins, REWARD, "cel venit")
+		assertEqual(verdict.InviterCoins, REWARD, "cel care a invitat")
+		assertEqual(verdict.Reason, nil, "fara motiv de refuz")
+	end)
+
+	it("jucator vechi: nimeni", function()
+		local verdict = Referral.decide(facts({ InviteeIsNew = false }))
+		assertEqual(verdict.InviteeCoins + verdict.InviterCoins, 0, "nimic")
+		assertEqual(verdict.Reason, "RETURNING", "motivul")
+	end)
+
+	it("auto-invitatie: nimeni", function()
+		local verdict = Referral.decide(facts({ Inviter = 20 }))
+		assertEqual(verdict.InviteeCoins + verdict.InviterCoins, 0, "nimic")
+		assertEqual(verdict.Reason, "SELF", "motivul")
+	end)
+
+	it("pereche deja platita: nimeni", function()
+		local verdict = Referral.decide(facts({ AlreadyPaid = true }))
+		assertEqual(verdict.InviteeCoins + verdict.InviterCoins, 0, "nimic")
+		assertEqual(verdict.Reason, "ALREADY_PAID", "motivul")
+	end)
+
+	it("plafon atins: doar cel venit primeste", function()
+		local verdict = Referral.decide(facts({ InviterToday = CAP }))
+		assertEqual(verdict.InviteeCoins, REWARD, "cel venit, tot")
+		assertEqual(verdict.InviterCoins, 0, "cel care a invitat, nu")
+		assertEqual(verdict.Reason, "CAP_REACHED", "motivul")
+		assertEqual(
+			Referral.decide(facts({ InviterToday = CAP - 1 })).InviterCoins,
+			REWARD,
+			"sub plafon, da"
+		)
+	end)
+
+	it("cine a invitat: intai ReferredByPlayerId, apoi LaunchData", function()
+		assertEqual(
+			Referral.inviterFrom({ ReferredByPlayerId = 42, LaunchData = Referral.launchData(7) }),
+			42,
+			"Roblox are intaietate"
+		)
+		assertEqual(
+			Referral.inviterFrom({ LaunchData = Referral.launchData(7) }),
+			7,
+			"a noastra, cand lipseste"
+		)
+		assertEqual(
+			Referral.inviterFrom({ ReferredByPlayerId = 0, LaunchData = Referral.launchData(7) }),
+			7,
+			"zero nu e cineva"
+		)
+	end)
+
+	it("LaunchData stricata sau lipsa: nimeni", function()
+		assertEqual(Referral.inviterFrom(nil), nil, "fara date")
+		assertEqual(Referral.inviterFrom({}), nil, "fara nimic in ele")
+		assertEqual(Referral.inviterFrom({ LaunchData = "hello" }), nil, "text strain")
+		assertEqual(Referral.inviterFrom({ LaunchData = "barricade-invite:-5" }), nil, "id negativ")
+		assertEqual(
+			Referral.inviterFrom({ LaunchData = "barricade-invite:12x" }),
+			nil,
+			"id cu litere"
+		)
+		assertEqual(Referral.inviterFrom({ LaunchData = string.rep("9", 250) }), nil, "prea lung")
+		assertEqual(Referral.inviterFrom({ ReferredByPlayerId = "10" }), nil, "id ca text")
+		-- `nil` intr-un tabel nu suprascrie nimic, deci campul se sterge de mana.
+		local orphan = facts()
+		orphan.Inviter = nil
+		assertEqual(Referral.decide(orphan).Reason, "NO_INVITER", "fara cine a invitat")
+	end)
+
+	it("ziua se socoteste pe UTC, pe zile intregi", function()
+		assertEqual(Referral.day(0), 0, "inceputul")
+		assertEqual(Referral.day(86399), 0, "ultima secunda")
+		assertEqual(Referral.day(86400), 1, "ziua urmatoare")
+	end)
+end)
+
+-- ------------------------------------------------------------ bonusuri sociale
+
+describe("Bonusurile sociale la banuti", function()
+	local Rewards = Shared.Rewards
+	local PAY = GameConfig.Rewards
+	local SOCIAL = GameConfig.Social
+	local WIN = PAY.Participation + PAY.WinBonus
+
+	local function round(x: number): number
+		return math.floor(x + 0.5)
+	end
+
+	local function labels(breakdown: any): string
+		local list = {}
+		for _, line in breakdown.Lines do
+			table.insert(list, line.Label .. " +" .. line.Coins)
+		end
+		return table.concat(list, ", ")
+	end
+
+	it("fara modificatori e exact ce era", function()
+		assertEqual(Rewards.forMatch("WIN", nil), WIN, "castig")
+		assertEqual(Rewards.forMatch("LOSS", {}), PAY.Participation, "pierdere, tabel gol")
+	end)
+
+	it("grupul adauga procentul lui din baza, rotunjit", function()
+		local b = Rewards.breakdown("WIN", { Group = true })
+		assertEqual(
+			labels(b),
+			string.format("Win +%d, Group bonus +%d", WIN, round(WIN * SOCIAL.GroupBonus)),
+			"randurile"
+		)
+		assertEqual(b.Total, WIN + round(WIN * SOCIAL.GroupBonus), "totalul")
+	end)
+
+	it("prietenul la masa adauga si el, si la pierdere", function()
+		local b = Rewards.breakdown("LOSS", { Friend = true })
+		assertEqual(
+			labels(b),
+			string.format(
+				"Match played +%d, Playing with a friend +%d",
+				PAY.Participation,
+				round(PAY.Participation * SOCIAL.FriendBonus)
+			),
+			"randurile"
+		)
+	end)
+
+	it("amandoua se aduna, cat incap sub plafon", function()
+		local saved = { SOCIAL.GroupBonus, SOCIAL.FriendBonus, SOCIAL.SocialBonusCap }
+		SOCIAL.GroupBonus, SOCIAL.FriendBonus, SOCIAL.SocialBonusCap = 0.10, 0.10, 0.20
+		local b = Rewards.breakdown("WIN", { Group = true, Friend = true })
+		SOCIAL.GroupBonus, SOCIAL.FriendBonus, SOCIAL.SocialBonusCap = saved[1], saved[2], saved[3]
+		assertEqual(#b.Lines, 3, "trei randuri")
+		-- Doua bonusuri de cate 10% dau aceeasi suma; in virgula mobila al doilea ar iesi cu unu mai mic.
+		assertEqual(b.Lines[2].Coins, round(WIN * 0.10), "grupul")
+		assertEqual(b.Lines[3].Coins, b.Lines[2].Coins, "prietenul, cat grupul")
+		assertEqual(b.Total, WIN + 2 * b.Lines[2].Coins, "totalul")
+	end)
+
+	it("plafonul taie ce trece de el", function()
+		local saved = SOCIAL.SocialBonusCap
+		SOCIAL.SocialBonusCap = 0.15
+		local b = Rewards.breakdown("WIN", { Group = true, Friend = true })
+		SOCIAL.SocialBonusCap = saved
+		assertEqual(b.Lines[2].Coins, round(WIN * SOCIAL.GroupBonus), "grupul intreg")
+		assertEqual(b.Lines[3].Coins, round(WIN * 0.05), "prietenul, doar ce a mai ramas")
+		assertEqual(b.Total, WIN + b.Lines[2].Coins + b.Lines[3].Coins, "totalul e suma randurilor")
+	end)
+
+	it("cu plafonul la zero nu apare niciun bonus", function()
+		local saved = SOCIAL.SocialBonusCap
+		SOCIAL.SocialBonusCap = 0
+		local b = Rewards.breakdown("WIN", { Group = true, Friend = true })
+		SOCIAL.SocialBonusCap = saved
+		assertEqual(#b.Lines, 1, "doar baza")
+		assertEqual(b.Total, WIN, "totalul")
 	end)
 end)
 

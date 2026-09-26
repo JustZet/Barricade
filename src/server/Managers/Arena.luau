@@ -48,6 +48,15 @@ local ARENA_HEIGHT = 8
 ]]
 local PODIUM_COVERAGE = 0.82
 
+--[[
+	Cat iese placa peste fata celulei, in studi.
+
+	Atat cat sa se vada deasupra lemnului fara sa palpaie cu el, si nimic mai
+	mult: placa e ingropata cu tot corpul ei in celula, iar pionul sta pe celula,
+	nu pe placa — la inaltimea asta nu se vede diferenta.
+]]
+local PLATE_LIFT = 0.06
+
 local Arena = {}
 Arena.__index = Arena
 
@@ -58,12 +67,15 @@ type ArenaFields = {
 	Walls: { [string]: Barricade.Barricade },
 	--[[
 		Soclul castigatorului. Exista doar dupa fluierul final, si doar unul.
-
-		In timpul meciului nu e niciun podium pe tabla: acolo se joaca, iar un
-		soclu sub fiecare pion ar ridica jucatorii deasupra grilei si ar ascunde
-		tocmai celulele pe care se apasa.
 	]]
 	Podium: Podium.Podium?,
+	--[[
+		Placa fiecarui jucator: plinta podiumului lui, fara decor, sub pion tot
+		meciul. Vezi `placePlate`.
+	]]
+	Plates: { [number]: Podium.Podium },
+	-- Celula pe care e asezata fiecare placa, ca sa nu fie mutata degeaba.
+	PlateCells: { [number]: string },
 	--[[
 		Ce tine in viata ceremonia: urcarea soclului. Se opreste daca masa se
 		darama inainte sa se termine.
@@ -142,6 +154,8 @@ function Arena.new(matchId: string, origin: CFrame?): Arena
 	self.Index = nextIndex
 	self.Id = matchId
 	self.Walls = {}
+	self.Plates = {}
+	self.PlateCells = {}
 	self.LastPlayers = {}
 	self.Watched = {}
 
@@ -224,12 +238,124 @@ function Arena.placePlayer(self: Arena, player: Player, cell: Types.Cell, object
 end
 
 --[[
+	Fata unei celule, intoarsa incotro priveste jucatorul care sta pe ea.
+
+	Un podium are o fata — tronul, arcada, fulgerul stau toate intr-o directie —
+	si asezat dupa axele lumii ar iesi la intamplare: pe o margine a tablei
+	jucatorul l-ar avea cu fata spre el, pe cealalta cu spatele. Intors odata cu
+	el, fata soclului cade spre camera, care vine sa se aseze in fata
+	castigatorului — vezi `followWinner` din `WorldController`. Directia se ia
+	doar din plan: `lookAt` si-ar inclina altfel si verticala, iar soclul ar
+	urca stramb din celula.
+
+	Intoarce si directia intreaga, pentru avatar.
+]]
+local function surfaceAt(self: Arena, cell: Types.Cell, objective: any): (CFrame?, Vector3?)
+	local top = self.Platform:cellTop(cell.X, cell.Y)
+	if not top then
+		return nil, nil
+	end
+	local facing = self.Platform:directionForObjective(objective, cell)
+	local flat = if facing then Vector3.new(facing.X, 0, facing.Z) else nil
+	local surface = if flat and flat.Magnitude > 0.01
+		then CFrame.lookAt(top, top + flat.Unit)
+		else CFrame.new(top)
+	return surface, facing
+end
+
+-- Podiumul ales de jucator din magazin, la marimea celulei.
+local function newPodium(
+	self: Arena,
+	player: Player,
+	cell: Types.Cell,
+	surface: CFrame
+): Podium.Podium?
+	local face = self.Platform:cell(cell.X, cell.Y)
+	if not face then
+		return nil
+	end
+	local wanted = player:GetAttribute(Loadout.attribute("Podium"))
+	return Podium.new(
+		if typeof(wanted) == "string" then wanted else nil,
+		self.Model,
+		surface,
+		math.min(face.Size.X, face.Size.Z) * PODIUM_COVERAGE
+	)
+end
+
+--[[
+	Placa de sub pion: plinta podiumului ales, fara decor, ingropata in celula
+	pana aproape de fata ei.
+
+	Se vede ca un patrat in culoarea podiumului, si merge cu jucatorul din celula
+	in celula. Nu-l ridica — pionul sta tot pe celula — si nu prinde nici clicuri,
+	nici fantoma zidului: e doar vopsea pe tabla. Decorul lipseste dinadins, ca
+	sa nu acopere zidurile si pionii vecini; iese la victorie, cand podiumul
+	intreg urca prin placa (vezi `celebrate`).
+
+	Dupa fluierul final nu se mai muta nimic: placa castigatorului e in grija
+	ceremoniei, iar ale celorlalti raman unde s-a terminat meciul.
+]]
+function Arena.placePlate(
+	self: Arena,
+	slot: number,
+	player: Player,
+	cell: Types.Cell,
+	objective: any
+)
+	if self.Podium then
+		return
+	end
+
+	local key = string.format("%d,%d", cell.X, cell.Y)
+	local existing = self.Plates[slot]
+	if existing and self.PlateCells[slot] == key then
+		return
+	end
+
+	local surface = surfaceAt(self, cell, objective)
+	if not surface then
+		return
+	end
+
+	local plate: Podium.Podium
+	if existing then
+		plate = existing
+	else
+		local made = newPodium(self, player, cell, surface)
+		if not made then
+			return
+		end
+		made:keepPlinth()
+		made:setSolid(false)
+		made:setQueryable(false)
+		self.Plates[slot] = made
+		plate = made
+	end
+
+	local _, size = plate.Model:GetBoundingBox()
+	plate:moveTo(surface * CFrame.new(0, PLATE_LIFT - size.Y, 0))
+	self.PlateCells[slot] = key
+end
+
+-- Placa unui jucator care a plecat de la masa pleaca si ea.
+function Arena.removePlate(self: Arena, slot: number)
+	local plate = self.Plates[slot]
+	if plate then
+		plate:destroy()
+	end
+	self.Plates[slot] = nil
+	self.PlateCells[slot] = nil
+end
+
+--[[
 	Ceremonia castigatorului: soclul iese chiar din celula pe care a castigat.
 
 	Podiumul e obiectul ales de el din magazin — id-ul vine din atributul scris
 	de `Loadout` — si porneste ingropat: talpa lui incepe cu o inaltime intreaga
-	sub fata tablei, deci in prima clipa nu se vede nimic. Urca pana ce plinta
-	ajunge la nivelul celulei si mai sus, ridicandu-l odata cu ea.
+	sub fata tablei, deci in prima clipa se vede doar placa pe care a stat tot
+	meciul. Decorul iese prin ea, apoi plinta o ajunge din urma si o inlocuieste,
+	si urca mai departe, ridicandu-l odata cu ea.
 
 	Avatarul nu e lasat in seama fizicii. Un soclu ancorat care urca printr-un
 	corp liber il imbranceste intr-o parte inainte sa apuce sa-l ridice, asa ca
@@ -253,42 +379,15 @@ function Arena.celebrate(self: Arena, slot: number?)
 	end
 
 	local cell = playerState.Position
-	local top = self.Platform:cellTop(cell.X, cell.Y)
-	local face = self.Platform:cell(cell.X, cell.Y)
-	if not (top and face) then
+	local surface, facing = surfaceAt(self, cell, playerState.Objective)
+	local podium = if surface then newPodium(self, player, cell, surface) else nil
+	if not (surface and podium) then
 		return
 	end
+	local top = surface.Position
 
-	--[[
-		Soclul priveste incotro priveste castigatorul.
-
-		Un podium are o fata — tronul, arcada, fulgerul stau toate intr-o
-		directie — si pana acum era asezat fara nicio rotatie, adica dupa axele
-		lumii, nu dupa om. Iesea la intamplare: pe o margine a tablei jucatorul
-		il avea cu fata spre el, pe cealalta cu spatele, fiindca cei doi privesc
-		in directii opuse.
-
-		Intors odata cu el, fata soclului cade exact spre camera, care vine sa se
-		aseze in fata castigatorului — vezi `followWinner` din `WorldController`.
-		Directia se ia doar din plan: `lookAt` si-ar inclina altfel si verticala,
-		iar soclul ar urca stramb din celula.
-	]]
-	local facing = self.Platform:directionForObjective(playerState.Objective, cell)
-	local flat = if facing then Vector3.new(facing.X, 0, facing.Z) else nil
-	local surface = if flat and flat.Magnitude > 0.01
-		then CFrame.lookAt(top, top + flat.Unit)
-		else CFrame.new(top)
-
-	local wanted = player:GetAttribute(Loadout.attribute("Podium"))
-	local podium = Podium.new(
-		if typeof(wanted) == "string" then wanted else nil,
-		self.Model,
-		surface,
-		math.min(face.Size.X, face.Size.Z) * PODIUM_COVERAGE
-	)
-	if not podium then
-		return
-	end
+	-- Placa de sub el ramane pana o ajunge din urma plinta podiumului care urca.
+	local plate: Podium.Podium? = self.Plates[slot]
 
 	--[[
 		Solid, ca sa-l tina, si transparent razelor, ca sa nu prinda clicuri: e
@@ -324,6 +423,17 @@ function Arena.celebrate(self: Arena, slot: number?)
 
 			podium:moveTo(surface * CFrame.new(0, -depth * (1 - eased), 0))
 			self:rideAlong(player, podium, top, facing)
+
+			--[[
+				Decorul iese prin placa, iar placa pleaca abia cand plinta care urca
+				ajunge in dreptul ei. Mai devreme, s-ar vedea o clipa celula goala
+				sub pion; mai tarziu, doua plinte una intr-alta.
+			]]
+			if plate and podium:standCFrame().Position.Y >= top.Y + PLATE_LIFT then
+				plate:destroy()
+				plate = nil
+				self.Plates[slot] = nil
+			end
 
 			if progress >= 1 then
 				break
@@ -406,7 +516,13 @@ function Arena.sync(self: Arena, state: BoardState, playerBySlot: { [number]: Pl
 		local player = playerBySlot[slot]
 		if player then
 			self:placePlayer(player, playerState.Position, playerState.Objective)
+			-- Placa de sub pion e oprita deocamdata; vezi `GameConfig.Arena.PlateUnderPawn`.
+			if GameConfig.Arena.PlateUnderPawn then
+				self:placePlate(slot, player, playerState.Position, playerState.Objective)
+			end
 			self:watchRespawn(player, slot)
+		else
+			self:removePlate(slot)
 		end
 	end
 
@@ -533,9 +649,10 @@ local function releasePlayer(player: Player)
 	local character = player.Character
 	local humanoid = character and character:FindFirstChildOfClass("Humanoid")
 	if humanoid then
-		humanoid.WalkSpeed = 16
-		humanoid.JumpPower = 50
-		humanoid.JumpHeight = 7.2
+		-- Viteza de lobby are un singur loc in care se scrie: vezi `GameConfig.Lobby`.
+		humanoid.WalkSpeed = GameConfig.Lobby.WalkSpeed
+		humanoid.JumpPower = GameConfig.Lobby.JumpPower
+		humanoid.JumpHeight = GameConfig.Lobby.JumpHeight
 	end
 	if not character then
 		return
@@ -561,6 +678,28 @@ local function releasePlayer(player: Player)
 	end)
 end
 
+--[[
+	Scoate un singur jucator de pe masa, fara sa o darame.
+
+	Pentru cine pleaca din meci inainte de vreme. Pana acum nu exista asa ceva:
+	`ArenaId` se stergea doar cand se daramă masa, adica la `VictoryHold` sau
+	cand plecase si ultimul. Cel care apasase „Leave" ramanea pana atunci cu
+	atributul pe el, deci si cu camera clientului lui agatata deasupra unei mese
+	pe care nu mai juca — de aici „camera sta blocata pana da si oponentul
+	leave".
+
+	Intoarce daca jucatorul chiar era pe masa asta. Cine nu era n-are ce i se
+	elibera, si mai ales n-are de ce sa fie mutat in lobby de o masa straina.
+]]
+function Arena.release(self: Arena, player: Player): boolean
+	if player:GetAttribute("ArenaId") ~= self.Id then
+		return false
+	end
+	player:SetAttribute("ArenaId", nil)
+	releasePlayer(player)
+	return true
+end
+
 function Arena.destroy(self: Arena)
 	--[[
 		Ceremonia se inchide prima. Corpul castigatorului e tintuit cat urca
@@ -576,10 +715,7 @@ function Arena.destroy(self: Arena)
 	end
 
 	for _, player in Players:GetPlayers() do
-		if player:GetAttribute("ArenaId") == self.Id then
-			player:SetAttribute("ArenaId", nil)
-			releasePlayer(player)
-		end
+		self:release(player)
 	end
 	for _, connection in self.Watched do
 		connection:Disconnect()
@@ -592,6 +728,9 @@ function Arena.destroy(self: Arena)
 	if self.Podium then
 		self.Podium:destroy()
 		self.Podium = nil
+	end
+	for slot in self.Plates do
+		self:removePlate(slot)
 	end
 	self.Platform:destroy()
 	self.Model:Destroy()

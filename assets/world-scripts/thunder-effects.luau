@@ -229,7 +229,7 @@ for _, dot in model:GetDescendants() do
 	emitter.Drag = 2.5
 	emitter.Rotation = NumberRange.new(0, 360)
 	emitter.RotSpeed = NumberRange.new(-220, 220)
-	emitter.LightEmission = 1
+	emitter.LightEmission = 0.5
 	emitter.LightInfluence = 0
 	emitter.Rate = 0
 	emitter.Parent = dot
@@ -242,7 +242,7 @@ local function lampOn(part: BasePart): PointLight
 	local light = Instance.new("PointLight")
 	light.Name = "Charge"
 	light.Color = Color3.fromHex("bfe9ff")
-	light.Range = 16
+	light.Range = 10
 	light.Brightness = 0
 	light.Shadows = false
 	light.Parent = part
@@ -427,7 +427,7 @@ RunService.Heartbeat:Connect(function(delta: number)
 
 	local burn = if strike >= 0 then fade else 0
 	for _, lamp in lamps do
-		lamp.Brightness = charge * 1.2 + burn * 5
+		lamp.Brightness = charge * 0.4 + burn * 2.2
 	end
 	for _, crystal in crystals do
 		if crystal then

@@ -40,6 +40,8 @@ type PodiumFields = {
 	Base: CFrame,
 	-- Ce trebuie oprit cand podiumul dispare: plutire, recurente, mai tarziu efecte.
 	Effects: { () -> () },
+	-- Scara modelului din `Assets`, la care e masurat `StandHeight`.
+	SourceScale: number,
 }
 
 export type Podium = typeof(setmetatable({} :: PodiumFields, Podium))
@@ -103,6 +105,7 @@ function Podium.new(itemId: string?, parent: Instance, surface: CFrame, span: nu
 	local self = setmetatable({}, Podium) :: Podium
 	self.Id = id
 	self.Effects = {}
+	self.SourceScale = source:GetScale()
 
 	local model = source:Clone()
 	model.Name = "Podium_" .. id
@@ -139,11 +142,17 @@ end
 	pe podea", si atunci un podium n-ar mai fi podium, iar avatarul ar ramane cu
 	soclul crescut prin el. Fara atribut se ia inaltimea intreaga a modelului,
 	adica se sta pe capacul lui; nu e exact, dar e in picioare.
+
+	Atributul e masurat pe modelul din `Assets`, asa cum e acolo — iar acolo
+	modelele sunt deja scalate (`crystal` sta la 3.6). Se inmultea cu toata
+	scara, nu cu cat s-a mai scalat de atunci, si plinta de 1.1 studi iesea de
+	4.1: mai inalta decat tot podiumul. Castigatorul era ridicat pe varful
+	decorului, nu pe plinta, iar `keepPlinth` nu gasea nimic de taiat.
 ]]
 local function standHeight(self: Podium): number
 	local marked = self.Model:GetAttribute("StandHeight")
 	if typeof(marked) == "number" and marked > 0 then
-		return marked * self.Model:GetScale()
+		return marked * self.Model:GetScale() / self.SourceScale
 	end
 
 	local _, size = self.Model:GetBoundingBox()
@@ -158,6 +167,38 @@ end
 -- Muta podiumul, impreuna cu punctul lui de referinta.
 function Podium.moveTo(self: Podium, surface: CFrame)
 	self.Base = ModelFit.onSurface(self.Model, surface)
+end
+
+--[[
+	Taie tot ce e deasupra plintei: ramane doar placa pe care se sta.
+
+	Asa arata podiumul in timpul meciului, sub fiecare pion — patratul lui, fara
+	tron, arcada sau fulger, care ar acoperi zidurile si pionii vecini. Decorul
+	iese abia la victorie, pe podiumul intreg care urca din placa.
+
+	Piesele se sterg, nu se ascund: pe decor stau lumini si emitatoare, iar un
+	emitator ramas pe o piesa nevazuta ar scoate scantei din aer. Scriptul de
+	efecte al modelului sare singur peste piesele care lipsesc.
+
+	Se taie la marimea de acum, deci se cheama dupa `new`, cand modelul e deja
+	scalat — altfel placa n-ar mai fi cat plinta podiumului care urca din ea.
+]]
+function Podium.keepPlinth(self: Podium)
+	local box, size = self.Model:GetBoundingBox()
+	local standTop = box.Position.Y - size.Y / 2 + standHeight(self)
+
+	local decor: { BasePart } = {}
+	for _, piece in ipairs(self.Model:GetDescendants()) do
+		if piece:IsA("BasePart") and piece.Position.Y + piece.Size.Y / 2 > standTop + 0.01 then
+			table.insert(decor, piece)
+		end
+	end
+	for _, piece in decor do
+		-- O piesa poate fi deja plecata, odata cu parintele ei.
+		if piece.Parent then
+			piece:Destroy()
+		end
+	end
 end
 
 --[[

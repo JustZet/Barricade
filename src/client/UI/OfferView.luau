@@ -54,7 +54,19 @@ local PANEL_W, PANEL_H = 504, 660
 local NAME = { X = 80, Y = 32, W = 344, H = 62 }
 local WELL = { X = 63, Y = 117, W = 378, H = 308 }
 local PRICE = { X = 60, Y = 441, W = 383, H = 57 }
-local ACTION = { X = 61, Y = 517, W = 382, H = 101 }
+--[[
+	Butonul umple scobitura lui, nu doar mijlocul ei.
+
+	Desenul lasa locul butonului intre 505 si 621; butonul statea de la 517 la
+	618, adica o duzina de pixeli de lemn gol deasupra lui si inca trei sub. Pe
+	cartonas golul ala se vedea ca un buton prea mic pentru scobitura in care
+	sta — placa aurie parea pusa acolo provizoriu, nu turnata in lemn.
+
+	Doi pixeli de o parte si de alta raman dinadins: lipita de muchie, placa ar
+	fi acoperit umbra sculptata a scobiturii, si butonul ar fi parut lipit peste
+	desen in loc de asezat in el.
+]]
+local ACTION = { X = 61, Y = 507, W = 382, H = 112 }
 
 --[[
 	Moneda din capatul dungii de pret, si aerul din jurul ei.
@@ -78,49 +90,43 @@ local ACTION = { X = 61, Y = 517, W = 382, H = 101 }
 	ajung banutii, verde pentru ce porti deja. Ce nu e inca de vanzare ia
 	lemnul inchis, ca sa nu para ca asteapta o apasare.
 
-	`Tag` e culoarea aceluiasi cuvant pe placuta de departe, unde nu e nicio
-	placa sub el si trebuie sa se descurce singur.
+	Tabelul e doar al butonului. Placuta de departe nu poarta nicio stare: pe ea
+	scrie un nume, iar un nume nu e nici de cumparat, nici echipat.
 ]]
 local LOOK: {
-	[string]: { Plate: string, Tint: Color3, Ink: Color3, Tag: Color3, Press: boolean },
-} =
-	{
-		BUY = {
-			Plate = Theme.Skin.Primary.Image,
-			Tint = Color3.new(1, 1, 1),
-			Ink = Theme.Color.TextInverse,
-			Tag = Theme.Color.Highlight,
-			Press = true,
-		},
-		EQUIP = {
-			Plate = Theme.Skin.Primary.Image,
-			Tint = Color3.new(1, 1, 1),
-			Ink = Theme.Color.TextInverse,
-			Tag = Theme.Color.Highlight,
-			Press = true,
-		},
-		WORN = {
-			Plate = Theme.Skin.Primary.Image,
-			Tint = Color3.fromHex("9FE08A"),
-			Ink = Theme.Color.Text,
-			Tag = Theme.Color.Valid,
-			Press = false,
-		},
-		POOR = {
-			Plate = Theme.Skin.Primary.Image,
-			Tint = Color3.fromHex("F08A86"),
-			Ink = Theme.Color.Text,
-			Tag = Theme.Color.Invalid,
-			Press = false,
-		},
-		SOON = {
-			Plate = Theme.Skin.Secondary.Image,
-			Tint = Color3.new(1, 1, 1),
-			Ink = Theme.Color.TextMuted,
-			Tag = Theme.Color.TextMuted,
-			Press = false,
-		},
-	}
+	[string]: { Plate: string, Tint: Color3, Ink: Color3, Press: boolean },
+} = {
+	BUY = {
+		Plate = Theme.Skin.Primary.Image,
+		Tint = Color3.new(1, 1, 1),
+		Ink = Theme.Color.TextInverse,
+		Press = true,
+	},
+	EQUIP = {
+		Plate = Theme.Skin.Primary.Image,
+		Tint = Color3.new(1, 1, 1),
+		Ink = Theme.Color.TextInverse,
+		Press = true,
+	},
+	WORN = {
+		Plate = Theme.Skin.Primary.Image,
+		Tint = Color3.fromHex("9FE08A"),
+		Ink = Theme.Color.Text,
+		Press = false,
+	},
+	POOR = {
+		Plate = Theme.Skin.Primary.Image,
+		Tint = Color3.fromHex("F08A86"),
+		Ink = Theme.Color.Text,
+		Press = false,
+	},
+	SOON = {
+		Plate = Theme.Skin.Secondary.Image,
+		Tint = Color3.new(1, 1, 1),
+		Ink = Theme.Color.TextMuted,
+		Press = false,
+	},
+}
 
 local COIN_SIDE, COIN_PAD = 58, 16
 
@@ -148,7 +154,7 @@ local WELL_RADIUS = UDim.new(0.156, 0)
 
 	Cartonasul e cat un jucator si jumatate: destul cat sa se citeasca de la
 	distanta de la care il poti si cumpara, dar nu cat sa acopere vitrina din
-	spatele lui. Placuta e mai ingusta, fiindca poarta doua randuri de text.
+	spatele lui. Placuta e mai ingusta: poarta un singur cuvant.
 ]]
 local PANEL_STUDS = 6
 local TAG_STUDS = 4.2
@@ -205,7 +211,6 @@ export type Offer = {
 type OfferFields = {
 	Tag: BillboardGui,
 	TagName: TextLabel,
-	TagPrice: TextLabel,
 	Panel: BillboardGui,
 	PanelScale: UIScale,
 	PanelKind: TextLabel,
@@ -243,7 +248,8 @@ export type OfferView = typeof(setmetatable({} :: OfferFields, OfferView))
 
 	`AlwaysOnTop` ramane stins dinadins: oferta e un obiect din lume si are voie
 	sa treaca in spatele unui stalp, ca orice altceva. Aprins, ar pluti peste tot
-	lobby-ul, chiar si prin ziduri, si ar arata ca o eroare.
+	lobby-ul, chiar si prin ziduri, si ar arata ca o eroare. Exceptia e
+	cartonasul de aproape, care trebuie sa primeasca clicuri — vezi `new`.
 
 	**Sta insa in `PlayerGui`, nu in piesa de care se agata.** Un billboard
 	parentat in `Workspace` se deseneaza, dar nu primeste nicio apasare: butonul
@@ -322,9 +328,20 @@ function OfferView.new(adornee: BasePart, lift: number): OfferView
 		Parent = tag,
 	})
 
-	-- Numele sus, pretul sub el: doua randuri intr-o singura scobitura.
-	local namePos, nameSize =
-		spot(TAG_INNER.X, TAG_INNER.Y, TAG_INNER.W, TAG_INNER.H * 0.56, TAG_W, TAG_H)
+	--[[
+		Pe placuta scrie doar numele, si atat.
+
+		Pretul statea sub el, pe al doilea rand, si nu avea ce cauta acolo: de la
+		distanta de la care se vede placuta nu poti cumpara nimic, deci cifra nu
+		e o informatie, e o intrebare fara raspuns. Ce trebuie sa afli din mers e
+		**care** vitrina e care, ca sa stii la care te duci; cat costa afli cand
+		ajungi, pe cartonasul care creste din ea.
+
+		Fara al doilea rand, numele ia toata scobitura si se citeste de mai
+		departe — `TextScaled` il umfla cat il lasa caseta, iar caseta tocmai s-a
+		dublat.
+	]]
+	local namePos, nameSize = spot(TAG_INNER.X, TAG_INNER.Y, TAG_INNER.W, TAG_INNER.H, TAG_W, TAG_H)
 	self.TagName = worldText({
 		Name = "Name",
 		Text = "",
@@ -332,25 +349,6 @@ function OfferView.new(adornee: BasePart, lift: number): OfferView
 		TextXAlignment = Enum.TextXAlignment.Center,
 		Position = namePos,
 		Size = nameSize,
-		Parent = tag,
-	})
-
-	local pricePos, priceSize = spot(
-		TAG_INNER.X,
-		TAG_INNER.Y + TAG_INNER.H * 0.58,
-		TAG_INNER.W,
-		TAG_INNER.H * 0.42,
-		TAG_W,
-		TAG_H
-	)
-	self.TagPrice = worldText({
-		Name = "Price",
-		Text = "",
-		Font = Theme.Font.Bold,
-		TextColor3 = Theme.Color.Highlight,
-		TextXAlignment = Enum.TextXAlignment.Center,
-		Position = pricePos,
-		Size = priceSize,
 		Parent = tag,
 	})
 
@@ -383,6 +381,21 @@ function OfferView.new(adornee: BasePart, lift: number): OfferView
 		Placuta de departe n-are nevoie: pe ea nu se apasa nimic.
 	]]
 	panel.Active = true
+
+	--[[
+		Si tot n-ar fi fost de ajuns: clicul pe un billboard se opreste la prima
+		piesa din lume pe care o loveste raza, inaintea lui. Cartonasul sta chiar
+		in stalpul nevazut pus de `Pedestal` peste soclu, iar stalpul e solid —
+		trebuie sa fie, ca sa nu te urci pe soclu — si o piesa solida prinde raze
+		oricum, oricat i-ai stinge `CanQuery`. Masurat in lobby: raza spre buton
+		lovea stalpul la 19 studi, cartonasul era la 25, iar clicul nu ajungea.
+
+		Deasupra a tot, raza nu mai trece prin lume. Numai cartonasul, nu si
+		placuta: el se deschide doar cand esti langa vitrina, iar de acolo n-are
+		ce sa-l acopere pe drept. Placuta de departe ramane in lume, cu stalpi cu
+		tot, cum scrie la `billboard`.
+	]]
+	panel.AlwaysOnTop = true
 	self.Panel = panel
 
 	self.PanelScale = Theme.create("UIScale", { Scale = 1, Parent = panel }) :: UIScale
@@ -553,7 +566,6 @@ end
 ]]
 function OfferView.paint(self: OfferView, offer: Offer)
 	self.TagName.Text = offer.Name
-	self.TagPrice.Text = offer.Action
 
 	self.PanelKind.Text = offer.Title
 	self.PanelLabel.Text = offer.Name
@@ -577,7 +589,6 @@ function OfferView.paint(self: OfferView, offer: Offer)
 	self.Face.Image = look.Plate
 	self.Face.ImageColor3 = look.Tint
 	self.PanelAction.TextColor3 = look.Ink
-	self.TagPrice.TextColor3 = look.Tag
 	self.Button.Active = look.Press
 
 	ItemWell.show(self.PanelWell, offer.Id, offer.Kind)

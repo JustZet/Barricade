@@ -18,6 +18,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Shared = ReplicatedStorage.Shared
 local Remotes = require(Shared.Remotes)
 local Catalog = require(Shared.Catalog)
+local Gift = require(Shared.Gift)
 local GameConfig = require(Shared.GameConfig)
 
 -- Canalele trebuie sa existe inainte ca vreun client sa le ceara.
@@ -25,6 +26,13 @@ Remotes.build()
 
 local MatchManager = require(script.Managers.MatchManager)
 local MatchmakingManager = require(script.Managers.MatchmakingManager)
+local Rematch = require(script.Managers.Rematch)
+local Challenges = require(script.Managers.Challenges)
+local Friends = require(script.Services.Friends)
+
+-- Stratul social: cine e prieten cu cine, si provocarile dintre jucatori.
+Friends.start()
+Challenges.start()
 local RateLimiter = require(script.Services.RateLimiter)
 
 --[[
@@ -70,6 +78,7 @@ end
 local Wallet = require(script.Services.Wallet)
 local Inventory = require(script.Services.Inventory)
 local Loadout = require(script.Services.Loadout)
+local Social = require(script.Services.Social)
 
 do
 	Wallet.start()
@@ -80,6 +89,8 @@ do
 		`Loadout.restore` din `src/shared/`, care spune de ce.
 	]]
 	Loadout.start()
+	-- Invitatiile au nevoie de portofel: recompensa se da prin el.
+	Social.start()
 end
 
 --[[
@@ -132,6 +143,41 @@ Remotes.get("RequestPlaceWall").OnServerEvent
 		match:handleWall(player, x, y, orientation)
 	end))
 
+--[[
+	Semnul trimis celorlalti de la masa. Trece prin aceeasi poarta ca mutarile —
+	esti intr-un meci, si nu apesi mai des decat lasa `RateLimits` — dar de acolo
+	incolo `Match` il judeca dupa alte reguli: vezi `handleEmote`.
+]]
+Remotes.get("RequestEmote").OnServerEvent
+	:Connect(withMatch("RequestEmote", function(match, player, emoteId)
+		match:handleEmote(player, emoteId)
+	end))
+
+--[[
+	Darul pentru like.
+
+	Clientul nu trimite nimic: **ce** se da scrie in `Gift`, nu in cerere. Altfel
+	ar fi de ajuns sa ceri alt id ca sa primesti alt obiect, si darul ar deveni
+	un magazin fara bani.
+
+	Like-ul nu se verifica si nu are cum — vezi `Gift`. Se verifica singurul
+	lucru care se poate: ca nu-l are deja, ca sa nu se dea de doua ori.
+]]
+Remotes.get("RequestGift").OnServerEvent:Connect(function(player: Player)
+	if not RateLimiter.consume(player, "RequestGift") then
+		return
+	end
+
+	if not Gift.canClaim(Inventory.owned(player)) then
+		Remotes.get("ActionRejected"):FireClient(player, "GIFT_OWNED")
+		return
+	end
+
+	Inventory.grant(player, { Gift.key() })
+	-- Se si imbraca, ca la o cumparare: nimeni nu ia un skin ca sa-l lase in raft.
+	Loadout.equip(player, Gift.Item.Kind, Gift.Item.Id)
+end)
+
 Remotes.get("RequestJoinQueue").OnServerEvent:Connect(function(player: Player, modeId: any)
 	if not RateLimiter.consume(player, "RequestQueue") then
 		return
@@ -155,35 +201,122 @@ Remotes.get("RequestLeaveMatch").OnServerEvent:Connect(function(player: Player)
 		return
 	end
 
+	--[[
+		Lobby-ul e raspunsul la cerere, nu o urmare a ei.
+
+		Clientul nu mai sare singur in lobby cand apesi „Leave" — asteapta
+		mesajul asta. De aceea pleaca si cand n-ai ce parasi: o cerere fara
+		raspuns ar lasa ecranul fara meci si fara meniu.
+	]]
+	local function sendToLobby()
+		Remotes.get("LobbyUpdate"):FireClient(player, { Mode = nil, Needed = 0, Names = {} })
+	end
+
 	local match = MatchManager.getForPlayer(player)
 	if not match then
+		sendToLobby()
 		return
 	end
 
-	if not match.Finished then
-		match:handleDisconnect(player)
+	local wasFinished = match.Finished
+	if not wasFinished then
+		match:handleLeave(player)
+	else
+		-- Pleaca de pe ecranul de final: revansa deschisa nu mai are loc.
+		Rematch.leave(player)
 	end
 
-	MatchManager.forget(player)
-	MatchManager.destroyIfEmpty(match)
-	Remotes.get("LobbyUpdate"):FireClient(player, { Mode = nil, Needed = 0, Names = {} })
+	--[[
+		Daca plecarea ta a fost chiar cea care a incheiat meciul, apuci sa vezi
+		finalul inainte sa fii scos.
+
+		Pleci pentru ca renunti, nu ca sa ramai cu intrebarea cine a castigat:
+		starea finala iti vine personal — `broadcast` nu te mai numara printre
+		participanti — iar camera ta face acelasi drum ca a tuturor, pana la
+		omul de pe soclu. Dureaza cat tine ceremonia si nicio clipa mai mult:
+		peste `VictoryReveal` incepe partea in care ceilalti citesc panoul de
+		final, si aia nu mai e a ta.
+
+		Cand meciul era incheiat dinainte — apesi „Leave" de pe ecranul de
+		victorie — nu se asteapta nimic: ai vazut deja tot.
+	]]
+	local ceremony = 0
+	if not wasFinished and match.Finished and match.Arena then
+		match:sendStateTo(player)
+		ceremony = GameConfig.Timing.VictoryReveal
+	end
+
+	local function depart()
+		if match.Arena then
+			match.Arena:release(player)
+		end
+		MatchManager.forget(player)
+		MatchManager.destroyIfEmpty(match)
+		sendToLobby()
+	end
+
+	if ceremony > 0 then
+		task.delay(ceremony, function()
+			--[[
+				Cine a inchis jocul intre timp nu mai are nevoie nici de masa,
+				nici de lobby — dar registrul tot trebuie sa uite de el, altfel
+				meciul ramane cu un loc ocupat de nimeni.
+			]]
+			if player.Parent == nil then
+				MatchManager.forget(player)
+				MatchManager.destroyIfEmpty(match)
+				return
+			end
+			depart()
+		end)
+	else
+		depart()
+	end
 end)
 
--- Revansa: iesi din meciul incheiat si intri din nou in coada aceluiasi mod.
+--[[
+	Revansa la aceeasi masa: cererea deschide votul sau spune da, refuzul il
+	inchide pentru toti. Tot ce inseamna ele sta in `Rematch`.
+]]
 Remotes.get("RequestRematch").OnServerEvent:Connect(function(player: Player)
-	if not RateLimiter.consume(player, "RequestQueue") then
+	if not RateLimiter.consume(player, "RequestRematch") then
 		return
 	end
+	Rematch.request(player)
+end)
 
-	local match = MatchManager.getForPlayer(player)
-	if not match or not match.Finished then
+Remotes.get("RequestRematchDecline").OnServerEvent:Connect(function(player: Player)
+	if not RateLimiter.consume(player, "RequestRematch") then
 		return
 	end
+	Rematch.decline(player)
+end)
 
-	local modeId = match.ModeId
-	MatchManager.forget(player)
-	MatchManager.destroyIfEmpty(match)
-	MatchmakingManager.join(player, modeId)
+--[[
+	Provocarea directa. Ce vine de la client — modul, pe cine, da sau nu, care
+	provocare — e doar forma cererii; `Challenges` verifica tot restul.
+]]
+Remotes.get("RequestChallenge").OnServerEvent
+	:Connect(function(player: Player, modeId: any, invitees: any)
+		if not RateLimiter.consume(player, "RequestChallenge") then
+			return
+		end
+		Challenges.request(player, modeId, invitees)
+	end)
+
+Remotes.get("RequestChallengeAnswer").OnServerEvent
+	:Connect(function(player: Player, id: any, accept: any)
+		if not RateLimiter.consume(player, "RequestChallengeAnswer") then
+			return
+		end
+		Challenges.answer(player, id, accept)
+	end)
+
+Remotes.get("RequestChallengeCancel").OnServerEvent:Connect(function(player: Player, id: any)
+	if not RateLimiter.consume(player, "RequestChallengeAnswer") then
+		return
+	end
+	Challenges.cancel(player, id)
 end)
 
 --[[
@@ -279,7 +412,37 @@ end)
 
 -- ------------------------------------------------------- intrari si iesiri
 
+--[[
+	Viteza de umblat prin lobby, pusa la fiecare aparitie a personajului.
+
+	La fiecare, nu o data: personajul e facut din nou la fiecare respawn, si
+	vine de fiecare data cu valorile din `StarterPlayer` — adica cele implicite
+	ale Roblox-ului. Scrise o singura data, s-ar fi pierdut la prima cadere in
+	apa.
+
+	Cine e pe o masa nu primeste nimic: acolo `Arena` taie mersul dinadins, iar
+	o viteza data peste ea l-ar dezlega pe jucator de celula pe care sta.
+]]
+local function applyLobbyPace(character: Model)
+	local humanoid = character:WaitForChild("Humanoid", 10)
+	if not humanoid or not humanoid:IsA("Humanoid") then
+		return
+	end
+	local player = Players:GetPlayerFromCharacter(character)
+	if player and player:GetAttribute("ArenaId") ~= nil then
+		return
+	end
+	humanoid.WalkSpeed = GameConfig.Lobby.WalkSpeed
+	humanoid.JumpPower = GameConfig.Lobby.JumpPower
+	humanoid.JumpHeight = GameConfig.Lobby.JumpHeight
+end
+
 Players.PlayerAdded:Connect(function(player: Player)
+	player.CharacterAdded:Connect(applyLobbyPace)
+	if player.Character then
+		applyLobbyPace(player.Character)
+	end
+
 	-- Poate s-a intors intr-un meci pus pe pauza pentru el.
 	for _, match in MatchManager.getAll() do
 		if match:tryReconnect(player) then
@@ -293,6 +456,7 @@ Players.PlayerRemoving:Connect(function(player: Player)
 
 	local match = MatchManager.getForPlayer(player)
 	if match then
+		Rematch.leave(player)
 		match:handleDisconnect(player)
 		MatchManager.forget(player)
 		MatchManager.destroyIfEmpty(match)

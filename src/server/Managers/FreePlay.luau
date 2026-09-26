@@ -9,8 +9,9 @@
 
 	Numaratoarea merge indiferent cati sunt pe soclu. Cand ajunge la zero:
 
-	  destui  -> pleaca meciul cu primii sositi
-	  unul    -> o ia de la capat, fiindca n-are cu cine
+	  doi-patru -> pleaca meciul cu toti, in modul care le vine: 1v1, sau
+	               1v1v1 / 1v1v1v1 cu obiectivul la centru
+	  unul      -> o ia de la capat, fiindca n-are cu cine
 
 	Cand soclul se umple, numaratoarea se ignora si meciul pleaca pe loc: n-are
 	rost sa astepti pe altcineva cand nu mai e loc pentru el.
@@ -39,10 +40,10 @@ local FreePlay = {}
 local SETTINGS = GameConfig.FreePlay
 
 --[[
-	Cati incap: exact cati cere modul. Nu se scrie inca un numar langa el, ca sa
-	nu existe doua adevaruri despre acelasi lucru.
+	Cati trebuie si cati incap: din modurile oferite. Nu se scrie inca un numar
+	langa ele, ca sa nu existe doua adevaruri despre acelasi lucru.
 ]]
-local CAPACITY = GameConfig.Modes[SETTINGS.Mode].Players
+local MINIMUM, CAPACITY = FreePlayRules.bounds(SETTINGS.Modes)
 
 --[[
 	Cat de sus peste soclu se mai considera ca stai pe el.
@@ -129,13 +130,14 @@ local function refresh(pad: BasePart)
 end
 
 local function start()
+	local modeId = FreePlayRules.modeFor(SETTINGS.Modes, math.min(#waiting, CAPACITY))
+	if not modeId then
+		return
+	end
+
 	local group: { Player } = {}
-	for index = 1, CAPACITY do
-		local player = waiting[index]
-		if not player then
-			return
-		end
-		table.insert(group, player)
+	for index = 1, GameConfig.Modes[modeId].Players do
+		table.insert(group, waiting[index])
 	end
 
 	--[[
@@ -151,7 +153,7 @@ local function start()
 		then CFrame.new(marker.Position + Vector3.new(0, marker.Size.Y / 2, 0))
 		else nil
 
-	MatchManager.create(SETTINGS.Mode, group, origin)
+	MatchManager.create(modeId, group, origin)
 	table.clear(waiting)
 	remaining = SETTINGS.Countdown
 
@@ -198,14 +200,18 @@ local function tick(delta: number)
 	if count == 0 then
 		remaining = SETTINGS.Countdown
 		if sign and not quiet then
-			sign:show("FREE PLAY", string.format("step on the pad — %d players", CAPACITY), false)
+			sign:show(
+				"FREE PLAY",
+				string.format("step on the pad — %d to %d players", MINIMUM, CAPACITY),
+				false
+			)
 		end
 		return
 	end
 
 	remaining -= delta
 
-	local decision = FreePlayRules.decide(count, SETTINGS.Minimum, CAPACITY, remaining)
+	local decision = FreePlayRules.decide(count, MINIMUM, CAPACITY, remaining)
 
 	if decision == "START" then
 		if sign and not quiet then

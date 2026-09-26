@@ -14,13 +14,18 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Shared = ReplicatedStorage.Shared
 local BoardState = require(Shared.BoardState)
+local Emotes = require(Shared.Emotes)
 local GameConfig = require(Shared.GameConfig)
+local MoveCommentary = require(Shared.MoveCommentary)
+local RematchVote = require(Shared.RematchVote)
 local Remotes = require(Shared.Remotes)
 local Rewards = require(Shared.Rewards)
 local Types = require(Shared.Types)
 
 local Arena = require(script.Parent.Arena)
 local Wallet = require(script.Parent.Parent.Services.Wallet)
+local Friends = require(script.Parent.Parent.Services.Friends)
+local Social = require(script.Parent.Parent.Services.Social)
 
 type BoardState = Types.BoardState
 
@@ -50,6 +55,13 @@ type MatchFields = {
 	ClockThread: thread?,
 	-- Firul care strange masa dupa ecranul de victorie.
 	CloseThread: thread?,
+	-- Ce tine minte comentariul intre actiuni: cat de in urma a fost fiecare.
+	Commentary: MoveCommentary.History,
+	--[[
+		Seria dintre aceiasi jucatori. Un meci nou din coada incepe una goala; o
+		revansa o primeste pe a meciului dinainte si o duce mai departe.
+	]]
+	Series: RematchVote.Series,
 	--[[
 		Masa fizica a meciului. Exista doar cand asseturile de lume sunt
 		importate; pe varianta 2D meciul se joaca in intregime intr-un ScreenGui
@@ -67,7 +79,12 @@ local nextMatchId = 0
 	isi primesc coltul lor din sirul de arene; cel de free play il da, fiindca
 	are un loc anume in lume, aratat de o piesa pusa acolo dinadins.
 ]]
-function Match.new(modeId: string, players: { Player }, origin: CFrame?): Match
+function Match.new(
+	modeId: string,
+	players: { Player },
+	origin: CFrame?,
+	series: RematchVote.Series?
+): Match
 	nextMatchId += 1
 
 	local participants = {}
@@ -87,6 +104,8 @@ function Match.new(modeId: string, players: { Player }, origin: CFrame?): Match
 		PauseThread = nil,
 		ClockThread = nil,
 		CloseThread = nil,
+		Commentary = MoveCommentary.newHistory(),
+		Series = series or RematchVote.newSeries(),
 	}, Match) :: Match
 
 	for slot, player in players do
@@ -141,6 +160,23 @@ function Match.broadcast(self: Match)
 	for _, player in self:getParticipants() do
 		remote:FireClient(player, snapshot)
 	end
+end
+
+--[[
+	Aceeasi stare, dar catre un singur om — inclusiv catre unul care nu mai e
+	participant.
+
+	Exista pentru cel care tocmai a parasit meciul si a incheiat-o cu asta.
+	`broadcast` trimite catre `getParticipants`, iar el a iesit din lista cu o
+	clipa inainte, deci n-ar afla niciodata ca meciul s-a terminat si cine l-a
+	castigat — iar lumea lui 3D are nevoie exact de asta ca sa duca camera pana
+	la castigator in loc sa ramana atarnata deasupra mesei.
+]]
+function Match.sendStateTo(self: Match, player: Player)
+	if self.Destroyed then
+		return
+	end
+	Remotes.get("GameStateUpdate"):FireClient(player, BoardState.snapshot(self.State))
 end
 
 -- Evenimente punctuale: sunet, animatie, banner. Starea adevarata ramane snapshot-ul.
@@ -269,7 +305,32 @@ local function payout(self: Match)
 		if player and player.Parent and playerState then
 			local outcome: Rewards.Outcome =
 				Rewards.outcomeFor(self.State.WinningTeam, playerState.Team)
-			Wallet.award(player, Rewards.forMatch(outcome), "match")
+
+			--[[
+				Bonusurile sociale se afla aici si se dau ca argument: `Rewards`
+				nu stie nimic de grupuri sau prieteni. Prieten la masa inseamna
+				oricine altcineva de la ea, adversar sau coechipier.
+			]]
+			local withFriend = false
+			for otherSlot, other in self.PlayerBySlot do
+				if
+					otherSlot ~= slot
+					and other
+					and Friends.areFriends(player.UserId, other.UserId)
+				then
+					withFriend = true
+				end
+			end
+			local breakdown =
+				Rewards.breakdown(outcome, { Group = Social.inGroup(player), Friend = withFriend })
+			Wallet.award(player, breakdown.Total, "match")
+
+			-- Randurile pentru ecranul de final: fiecare isi vede doar socoteala lui.
+			Remotes.get("MatchEvent"):FireClient(player, {
+				Type = "Payout",
+				Lines = breakdown.Lines,
+				Total = breakdown.Total,
+			})
 		end
 	end
 end
@@ -294,10 +355,23 @@ local function finishIfOver(self: Match): boolean
 		self.Arena:celebrate(self.State.Winner)
 	end
 
+	--[[
+		Meciul intra in serie inainte sa plece vestea, ca ecranul de final sa
+		arate deja scorul cu el cu tot: „Rematch #3 · 2–1", nu „1–1".
+	]]
+	local winners = {}
+	for _, playerState in self.State.Players do
+		if self.State.WinningTeam ~= nil and playerState.Team == self.State.WinningTeam then
+			table.insert(winners, playerState.UserId)
+		end
+	end
+	RematchVote.record(self.Series, winners)
+
 	self:sendEvent({
 		Type = "Victory",
 		Winner = self.State.Winner,
 		WinningTeam = self.State.WinningTeam,
+		Series = { Games = self.Series.Games, Wins = table.clone(self.Series.Wins) },
 	})
 	payout(self)
 
@@ -347,6 +421,28 @@ function Match.resolveSlot(self: Match, player: Player): (number?, string?)
 	return slot, nil
 end
 
+--[[
+	Ce se striga dupa actiune, socotit o data aici si trimis tuturor.
+
+	Comentariul e podoaba, nu regula: o eroare in el nu are voie sa opreasca o
+	mutare deja aplicata. De aceea trece prin `pcall` si, daca se rupe, meciul
+	merge mai departe fara text.
+]]
+local function comment(self: Match, before: BoardState, action: MoveCommentary.Action): { any }
+	local ok, callouts = pcall(MoveCommentary.analyze, before, self.State, action, self.Commentary)
+	if not ok then
+		warn("Match: comentariul mutarii a esuat: " .. tostring(callouts))
+		return {}
+	end
+	MoveCommentary.record(self.Commentary, self.State, callouts, action.Slot)
+	return callouts
+end
+
+-- Copia starii de dinaintea unei actiuni, pentru comentariu. Aceeasi cale ca replicarea.
+local function copyState(state: BoardState): BoardState
+	return BoardState.fromSnapshot(BoardState.snapshot(state))
+end
+
 function Match.handleMove(self: Match, player: Player, target: any)
 	local slot, blocked = self:resolveSlot(player)
 	if not slot then
@@ -356,6 +452,7 @@ function Match.handleMove(self: Match, player: Player, target: any)
 
 	local from = self.State.Players[slot].Position
 	local previousFrom = { X = from.X, Y = from.Y }
+	local before = copyState(self.State)
 
 	local result = BoardState.applyMove(self.State, slot, target)
 	if not result.Ok then
@@ -363,12 +460,17 @@ function Match.handleMove(self: Match, player: Player, target: any)
 		return
 	end
 
+	local to = { X = self.State.Players[slot].Position.X, Y = self.State.Players[slot].Position.Y }
+	local callouts =
+		comment(self, before, { Kind = "Move", Slot = slot, From = previousFrom, To = to })
+
 	self:broadcast()
 	self:sendEvent({
 		Type = "MoveApplied",
 		Slot = slot,
 		From = previousFrom,
-		To = { X = self.State.Players[slot].Position.X, Y = self.State.Players[slot].Position.Y },
+		To = to,
+		Callouts = callouts,
 	})
 
 	if not finishIfOver(self) then
@@ -383,17 +485,23 @@ function Match.handleWall(self: Match, player: Player, x: any, y: any, orientati
 		return
 	end
 
+	local before = copyState(self.State)
+
 	local result = BoardState.applyWall(self.State, slot, x, y, orientation)
 	if not result.Ok then
 		reject(player, result.Reason :: string)
 		return
 	end
 
+	local wall = { X = x, Y = y, Orientation = orientation }
+	local callouts = comment(self, before, { Kind = "Wall", Slot = slot, Wall = wall })
+
 	self:broadcast()
 	self:sendEvent({
 		Type = "WallPlaced",
 		Slot = slot,
-		Wall = { X = x, Y = y, Orientation = orientation },
+		Wall = wall,
+		Callouts = callouts,
 	})
 	self:sendEvent({ Type = "TurnChanged", Slot = BoardState.getCurrentSlot(self.State) })
 end
@@ -426,6 +534,33 @@ end
 	deconectare scurta. Ce nu se intampla niciodata: meciul nu ramane
 	blocat la nesfarsit asteptand pe cineva care nu se mai intoarce.
 ]]
+--[[
+	Un emote, trimis mai departe la toata masa.
+
+	Nu trece prin `resolveSlot`, si asta e dinadins: aia e poarta actiunilor de
+	joc, care cer sa fie randul tau si meciul in desfasurare. Un semn nu e o
+	mutare — se da tocmai cat astepti sa mute celalalt, iar dupa fluierul final
+	e chiar momentul in care ai ceva de spus. Singurul lucru cerut e sa fii la
+	masa asta.
+
+	Id-ul venit de la client se cauta in catalog inainte de orice. Ce nu exista
+	acolo nu pleaca mai departe: altfel un client modificat ar putea pune orice
+	sir de caractere in balonul tuturor.
+]]
+function Match.handleEmote(self: Match, player: Player, emoteId: any)
+	local slot = self.SlotByUserId[player.UserId]
+	if not slot then
+		return
+	end
+
+	local emote = Emotes.get(emoteId)
+	if not emote then
+		return
+	end
+
+	self:sendEvent({ Type = "Emote", Slot = slot, EmoteId = emote.Id, UserId = player.UserId })
+end
+
 function Match.handleDisconnect(self: Match, player: Player)
 	local slot = self.SlotByUserId[player.UserId]
 	if not slot or self.Finished then
@@ -453,6 +588,39 @@ function Match.handleDisconnect(self: Match, player: Player)
 		-- Rabdarea s-a terminat: meciul merge mai departe fara el.
 		withdraw(self, slot)
 	end)
+end
+
+--[[
+	A plecat cu voia lui. Nu e acelasi lucru cu o deconectare.
+
+	Pana acum „Leave" trecea prin `handleDisconnect`, iar cu `Reconnect.Mode`
+	pe `PAUSE` asta inseamna: opreste meciul, tine-l asa `GraceSeconds` si
+	asteapta-l sa revina. Numai ca omul nu cazuse de pe internet — apasase un
+	buton pe care scria ca pleaca. Adversarul ramanea trei sferturi de minut in
+	fata unei table inghetate, cu „waiting for reconnect" peste ea, pentru
+	cineva care nu avea de gand sa se intoarca; meciul nu se incheia, deci nu
+	exista nici castigator, nici ceremonie, si camera celui plecat ramanea
+	agatata deasupra mesei.
+
+	Rabdarea e pentru conexiuni, nu pentru hotarari. Cine pleaca, pleaca acum.
+]]
+function Match.handleLeave(self: Match, player: Player)
+	local slot = self.SlotByUserId[player.UserId]
+	if not slot or self.Finished then
+		return
+	end
+
+	--[[
+		Daca meciul statea pe loc asteptandu-l chiar pe el — s-a deconectat, a
+		revenit si a apasat „Leave" — asteptarea nu mai are obiect. Firul lasat
+		sa expire ar retrage a doua oara acelasi slot.
+	]]
+	if self.State.PausedForSlot == slot and self.PauseThread then
+		task.cancel(self.PauseThread)
+		self.PauseThread = nil
+	end
+
+	withdraw(self, slot)
 end
 
 -- Acelasi UserId s-a intors inainte sa expire rabdarea.

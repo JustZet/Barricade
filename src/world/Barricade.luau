@@ -360,7 +360,12 @@ end
 	camera, iar camera sta sus, departe de tabla. Vezi `GameConfig.WorldSound`.
 ]]
 function Barricade.playSound(self: Barricade, assetId: number)
-	if assetId == 0 then
+	--[[
+		Sunetele skinurilor sunt oprite dintr-un singur loc, nu sterse din fiecare
+		skin: vezi `GameConfig.WorldSound.SkinSounds`. Aici e locul in care trec
+		toate, deci aici se opresc.
+	]]
+	if assetId == 0 or not GameConfig.WorldSound.SkinSounds then
 		return
 	end
 	local anchor = self.Model.PrimaryPart or self.Model:FindFirstChildWhichIsA("BasePart", true)

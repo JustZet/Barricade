@@ -119,14 +119,32 @@ GameConfig.ModeOrder = { "1v1", "1v1v1", "1v1v1v1", "2v2" }
 	din HUD. Design system-ul cere si o forma per culoare — cerc, romb, patrat,
 	triunghi — tocmai ca jocul sa ramana lizibil pentru daltonisti.
 
+	Abatere de la design system: slotul 3 era verde, dar verdele e deja culoarea
+	celulelor pe care te poti muta, iar un pion verde pe o tabla care se aprinde
+	verde spune doua lucruri deodata. A trecut pe roz. Asseturile `green` din
+	`Theme.Assets.Token` nu sunt folosite de cod; daca vor fi, trebuie redesenate.
+
 	Raman numere hex, nu `Color3`: `src/shared/` nu atinge API-ul Roblox.
 ]]
 GameConfig.SlotColors = {
 	0x2F7FD1, -- 1 albastru · cerc
 	0xD9443F, -- 2 rosu · romb
-	0x4BA63C, -- 3 verde · patrat
+	0xE0529C, -- 3 roz · patrat
 	0xE8B32B, -- 4 galben · triunghi
 }
+
+--[[
+	Culoarea celulelor pe care se termina meciul, aceeasi in toate modurile: in
+	1v1 si 2v2 e randul de pe partea cealalta, in 1v1v1 si 1v1v1v1 celula din
+	centru. O singura culoare inseamna o singura regula de invatat — „mergi la
+	turcoaz" — oricati ar fi la masa.
+
+	Turcoaz sters, spre verde-marin: verdele mutarilor legale (`7FD06A`) bate spre
+	galben, deci cele doua se despart prin nuanta chiar si amestecate cu lemnul.
+	Violetul de dinainte se pierdea pe tabla, iar galbenul dinaintea lui era
+	chiar culoarea slotului 4.
+]]
+GameConfig.GoalColor = 0x6ED8B6
 
 GameConfig.TeamColors = {
 	-- 2v2: slot 1 si 2 sunt echipa albastra, 3 si 4 echipa rosie.
@@ -156,8 +174,14 @@ GameConfig.Timing = {
 		Trebuie sa acopere toata ceremonia plus rasfoirea panoului de la final:
 		`VictoryReveal + VictoryAutoLeave`. Mai scurt, masa s-ar darama sub un
 		jucator care inca se uita la ea. Cat tine masa tin si artificiile.
+
+		Si inca un vot de revansa intreg: el se poate deschide in ultima secunda
+		a panoului, iar numaratoarea panoului sta pe loc cat se voteaza. Masa
+		trebuie sa fie in picioare pana la capatul votului, apoi cat se vede vestea
+		ca s-a anulat si cat mai sta panoul dupa ea: 7 + 8 + 10 + 2.2 + 3 = 30.2,
+		cu rezerva pana la 32. Un test tine socoteala.
 	]]
-	VictoryHold = 20,
+	VictoryHold = 32,
 	--[[
 		Cat dureaza urcarea soclului de sub castigator, in secunde.
 
@@ -194,6 +218,15 @@ GameConfig.Timing = {
 		ecranul de victorie inca deschis peste el.
 	]]
 	VictoryAutoLeave = 8,
+	--[[
+		Cat asteapta votul de revansa, in secunde, de la prima cerere. Bara din
+		banner se goleste in timpul asta. Creste-l impreuna cu `VictoryHold`.
+	]]
+	RematchWindow = 10,
+	-- Cat sta pe ecran vestea ca revansa s-a anulat, inainte de intrebarea despre coada.
+	RematchNotice = 2.2,
+	-- Cat mai sta panoul de final dupa un vot anulat, pentru cine n-a acceptat.
+	RematchResume = 3,
 }
 
 --[[
@@ -290,6 +323,31 @@ GameConfig.Rewards = {
 }
 
 --[[
+	Cum se umbla prin lobby.
+
+	Lobby-ul e o insula de vreo suta douazeci de studi, cu vitrinele intr-un
+	capat si arena in celalalt, iar la viteza implicita a Roblox-ului drumul
+	dintre ele se simte lung — nu greu, doar lung, ceea ce e mai rau: pana
+	ajungi la soclu ai avut timp sa te razgandesti. Douazeci si doi e viteza
+	implicita crescuta cu o treime: se simte ca mers grabit, nu ca alergare, si
+	nu trece de pragul de la care pasii nu mai tin ritmul cu deplasarea si
+	personajul pare ca patineaza.
+
+	Valorile stau aici, nu in `StarterPlayer` din place, tocmai ca sa existe un
+	singur loc in care se schimba. Place-ul isi pastreaza valorile lui
+	implicite; serverul le suprascrie la fiecare aparitie a personajului,
+	inainte ca jucatorul sa apuce sa faca un pas.
+
+	Saritura ramane cea implicita. Aici nu se sare peste nimic, si o saritura
+	mai inalta ar cere si un lobby gandit pentru ea.
+]]
+GameConfig.Lobby = {
+	WalkSpeed = 22,
+	JumpPower = 50,
+	JumpHeight = 7.2,
+}
+
+--[[
 	Ajutoare pentru testat, active **numai in Studio**.
 
 	`StudioCoins` umple portofelul pana la suma asta la intrarea in joc, ca sa
@@ -321,21 +379,135 @@ GameConfig.Reconnect = {
 	umple, numaratoarea nu mai conteaza — n-are rost sa astepti pe altcineva cand
 	nu mai e loc pentru el.
 
-	Cati incap nu se scrie aici: se citeste din `Modes[Mode].Players`. Doua
-	numere care spun acelasi lucru ajung mai devreme sau mai tarziu sa nu-l mai
-	spuna la fel. Cand vor exista si variantele de trei si patru, modul se va
-	alege dupa cati asteapta, si tot de acolo va veni si numarul.
+	Modul se alege dupa cati s-au strans cand pleaca meciul: doi joaca 1v1, trei
+	1v1v1, patru 1v1v1v1. Nici minimul, nici cati incap nu se scriu aici — se
+	citesc din `Modes[...].Players`. Doua numere care spun acelasi lucru ajung
+	mai devreme sau mai tarziu sa nu-l mai spuna la fel.
 ]]
 GameConfig.FreePlay = {
-	Mode = "1v1",
-	-- De la cati in sus se poate juca. Sub atat, numaratoarea o ia de la capat.
-	Minimum = 2,
+	Modes = { "1v1", "1v1v1", "1v1v1v1" },
 	-- Secundele numaratorii, si cat asteapta inainte sa o ia de la capat.
 	Countdown = 15,
 	-- Cat de des se uita serverul cine sta pe soclu.
 	PollInterval = 0.5,
 	-- Numele piesei din Workspace care arata unde se aseaza masa meciului.
 	ArenaMarker = "FreePlayArena",
+}
+
+--[[
+	Callout-urile de dupa fiecare mutare: pragurile dupa care se aleg, in
+	`MoveCommentary`, si ritmul lor pe ecran, in `CalloutView`.
+
+	Pragurile sunt in pasi de drum — cu cat a crescut drumul cel mai scurt al
+	cuiva pana la tinta. Un pas in plus se intampla la aproape orice baricada si
+	nu merita strigat; de aceea blocajul incepe de la doi.
+]]
+GameConfig.Callouts = {
+	-- De la cati pasi in plus pentru un adversar e BLOCK, BLOCK_BIG, BLOCK_HUGE, BLOCK_MEGA.
+	BlockMin = 2,
+	BlockBigMin = 3,
+	BlockHugeMin = 4,
+	BlockMegaMin = 6,
+	-- Cati pasi in plus trebuie sa ia fiecare dintre adversari ca sa fie DOUBLE_BLOCK.
+	DoubleBlockMin = 2,
+	-- Cat de in urma trebuie sa fi fost cineva ca revenirea sa fie COMEBACK.
+	ComebackDeficit = 3,
+	-- NECK_AND_NECK: toti cel mult la atatia pasi, si diferenta cel mult atat.
+	NeckMaxDistance = 3,
+	NeckMaxSpread = 1,
+	-- Cate callout-uri se arata dupa o singura actiune; restul se taie.
+	MaxPerAction = 2,
+
+	-- Cat sta pe ecran, pe marimi (1 mic, 2 mediu, 3 epic), in secunde.
+	Lifetime = { 1.2, 1.6, 2.2 },
+	-- Marimea textului pe marimi, in pixeli, la un ecran inalt de 900.
+	TextSize = { 34, 44, 56 },
+	-- Cat urca textul pana dispare, in pixeli.
+	Float = 40,
+	-- Cat asteapta al doilea callout al aceleiasi actiuni dupa primul.
+	Stagger = 0.35,
+	-- Intarzierea dintre litere la intrarea pe marimea 3.
+	LetterStagger = 0.03,
+	-- Cat dureaza fiecare cifra din numaratoarea lui „+4".
+	CountStep = 0.09,
+	-- Cat de sus peste celula, in studi, sta textul in lumea 3D: peste avatar.
+	WorldLift = 6,
+	-- Tremurul camerei pe marimea 3, in studi si secunde.
+	ShakeAmount = 0.35,
+	ShakeSeconds = 0.3,
+}
+
+--[[
+	Rama care se aprinde pe marginea tablei 3D la callout-uri; vezi `BoardRim`.
+
+	Pozitia se da in pasi de celula, nu in studi, ca sa urmeze tabla daca se
+	scaleaza vreodata: la tabla de acum un pas e 7.2 studi, zona de joc se
+	termina la 4.53 pasi de centru, iar rama la 5.46; mijlocul ei e la 5.
+]]
+--[[
+	Masa meciului 3D.
+
+	`PlateUnderPawn` pune sub fiecare pion plinta podiumului ales (vezi
+	`Arena.placePlate`). Oprita deocamdata: codul ramane, gata de repornit
+	cu `true`, iar la victorie podiumul urca la fel ca inainte.
+]]
+GameConfig.Arena = {
+	PlateUnderPawn = false,
+}
+
+GameConfig.Rim = {
+	-- Cat de departe de centru sta bara, in pasi de celula: pe mijlocul ramei, unde erau liniutele.
+	Offset = 5.0,
+	-- Cat de jos fata de fata celulelor e suprafata ramei, in pasi de celula.
+	Drop = -0.151,
+	-- Grosimea barei rotunde (diametrul pastilelor), si cat se ridica placa nevazuta a particulelor, in studi.
+	Width = 0.55,
+	Thickness = 0.3,
+	-- Cum arata bara cand nu se intampla nimic: un sant inchis, abia vazut.
+	RestColor = 0x3B2412,
+	RestTransparency = 0.35,
+	-- Cat tine fiecare efect, in secunde.
+	Seconds = { Small = 1.1, Big = 1.9, Mega = 3.2, Combo = 3.0, Frost = 2.4, Victory = 6.0 },
+	Palettes = {
+		-- Margele aurii, cu coada mandarina.
+		Small = { 0xFFE066, 0xFFB627, 0xFF7A1A },
+		-- Valul: roz aprins, portocaliu, galben.
+		Big = { 0xFF3CAC, 0xFF8C42, 0xFFE45E },
+		Rainbow = { 0xFF006E, 0xFB5607, 0xFFBE0B, 0x3AFF8A, 0x3A86FF, 0x8338EC },
+		-- Flacarile seriei: magenta, cyan, lime, violet.
+		Combo = { 0xFF3CAC, 0x3DE8FF, 0xA8FF3D, 0x9B5DE5 },
+		-- Ce ingheata pe partea celui blocat.
+		Frost = { 0x9AD1FF, 0xC8B6FF, 0xEAF6FF },
+	},
+}
+
+--[[
+	Stratul social: provocari, invitatii, bonusuri. Vezi `Challenge`,
+	`Referral`, `Rewards` si serviciile de pe server.
+]]
+GameConfig.Social = {
+	-- Cat asteapta o provocare raspunsul, in secunde.
+	ChallengeWindow = 15,
+	-- Dupa un refuz, cat nu-l mai poti provoca pe acelasi om, in secunde.
+	ChallengeCooldown = 30,
+	-- Cat de des se uita serverul unde e fiecare (meci, coada) si ce provocari au expirat.
+	PresenceInterval = 0.5,
+	--[[
+		Banutii pentru o invitatie reusita: cel venit (daca e nou) si cel care l-a
+		invitat primesc fiecare atat. Vezi `Referral`.
+	]]
+	ReferralReward = 100,
+	-- Cate recompense de invitatie poate lua acelasi om intr-o zi (UTC).
+	ReferralDailyCap = 5,
+	--[[
+		Bonusurile sociale la banutii de meci, ca parte din baza (castig sau
+		participare). Se aduna, dar impreuna nu trec de `SocialBonusCap`.
+		`GroupId = 0` opreste bonusul de grup si indemnul din lobby.
+	]]
+	GroupId = 0,
+	GroupBonus = 0.10,
+	FriendBonus = 0.10,
+	SocialBonusCap = 0.20,
 }
 
 -- Limitare de rata pe RemoteEvent, per jucator. Vezi Services/RateLimiter.
@@ -356,22 +528,83 @@ GameConfig.RateLimits = {
 		cineva care isi incearca skinurile pe rand, si taie bucla.
 	]]
 	RequestEquip = { Interval = 0.5, Burst = 4 },
+	-- Votul de revansa: cerere, acceptare, refuz. Rar, dar trebuie sa raspunda pe loc.
+	RequestRematch = { Interval = 0.5, Burst = 3 },
+	--[[
+		O provocare noua ajunge pe ecranul altcuiva, deci e singura care se poate
+		face hartuiala. Doua secunde intre ele, plus cooldown-ul de dupa refuz.
+	]]
+	RequestChallenge = { Interval = 2, Burst = 2 },
+	-- Raspunsul la o provocare, sau renuntarea la ea.
+	RequestChallengeAnswer = { Interval = 0.5, Burst = 3 },
+	--[[
+		Darul se cere o data in viata, dar butonul se poate apasa de zece ori
+		pana raspunde serverul. O secunda intre cereri ajunge.
+	]]
+	RequestGift = { Interval = 1, Burst = 3 },
+	--[[
+		Emote-urile sunt singura cerere facuta ca sa fie *auzita* de altcineva,
+		si de aceea singura care se poate transforma in bataie de joc. O secunda
+		si jumatate intre ele lasa loc unei reactii adevarate — rade, apoi se
+		miră — dar taie sirul de zece la rand cu care se acopera adversarul.
+
+		Rafala e doua, nu una: doua semne trimise repede unul dupa altul chiar
+		spun ceva impreuna, si n-are rost sa fie oprit al doilea.
+	]]
+	RequestEmote = { Interval = 1.5, Burst = 2 },
 }
 
 --[[
 	Sunete. Pune aici id-urile tale de asset; 0 inseamna "fara sunet" si
 	SoundController il ignora fara sa arunce eroare.
 ]]
+--[[
+	Mutarea si zidul suna diferit dupa **cine** le-a facut.
+
+	Intr-un joc pe ture, cel mai des pui o intrebare din doua: a mutat? si eu
+	sau el? La un singur sunet pentru amandoi, a doua intrebare cere sa te uiti
+	pe ecran — iar daca tocmai te uitai in alta parte, n-ai de unde sti daca
+	zgomotul ala a fost al tau, cu o clipa in urma, sau al lui, acum.
+
+	Doua sunete o raspund fara sa se uite nimeni nicaieri. Ale tale sunt
+	confirmarea a ceea ce tocmai ai apasat; ale lui sunt vestea ca s-a intamplat
+	ceva cat timp asteptai.
+
+	„Adversarul" inseamna aici oricine altcineva de la masa. In 2v2, mutarea
+	coechipierului suna tot ca a adversarului — nu e ideal, dar diferenta care
+	conteaza cand astepti e intre „a mutat cineva" si „am mutat eu".
+]]
 GameConfig.Sounds = {
-	-- „ui-simple-button-click": scurt si sec, cat sa se auda ca pionul a ajuns.
-	Move = 88442833509532,
-	WallPlaced = 0,
+	MoveSelf = 9117488478,
+	MoveOther = 9119981671,
+	WallSelf = 9120917438,
+	WallOther = 9120917813,
 	-- „bass.wav": bufnitura surda de la Roblox, pentru mutarea refuzata.
 	WallInvalid = 12221944,
 	TurnChange = 0,
 	-- „victory.wav", sunetul vechi de la Roblox.
 	Victory = 12222253,
 	Countdown = 0,
+	--[[
+		Callout-urile de dupa mutare; vezi `Callouts`. Trei trepte de combo pe
+		cele trei marimi, iar „perfect" doar pentru cele doua momente rare:
+		BRICKED IN si COMEBACK.
+	]]
+	CalloutSmall = 121389566348526, -- „combo 1"
+	CalloutBig = 90404118421297, -- „combo 2"
+	CalloutEpic = 133069312286739, -- „combo 3"
+	CalloutPerfect = 115129368164581, -- „perfect combo"
+	-- Cand blocajul te loveste pe tine. „Fuhhhh".
+	CalloutBlocked = 84452117506909,
+	-- Cand vestea e a adversarului: ti-a sarit peste pion, e la un pas, a revenit.
+	CalloutOhNo = 125512319549502,
+	-- Tick-ul numaratorii din „+4", la fiecare cifra. Inca tacut.
+	CalloutCount = 0,
+	-- Stratul social; toate tacute deocamdata.
+	RematchAsk = 0, -- bannerul „{name} wants a rematch!"
+	RematchAccept = 0, -- pop-ul unui avatar care a acceptat
+	RematchCancel = 0, -- revansa s-a anulat
+	SocialToast = 0, -- o notificare sociala: provocare, prieten intrat, recompensa
 } :: { [string]: number }
 
 --[[
@@ -437,9 +670,30 @@ GameConfig.SoundStart = {
 } :: { [number]: number }
 
 GameConfig.SoundVolume = {
-	Move = 0.85,
+	-- Ce ai facut tu se aude ca raspuns: tare si sec.
+	MoveSelf = 0.85,
+	WallSelf = 0.85,
+	--[[
+		Ce a facut celalalt se aude ca veste, nu ca raspuns, deci sta cu un pas
+		in spate. Diferenta de volum lucreaza si ea impotriva confuziei: chiar
+		daca cineva n-ar deosebi cele doua sunete, deosebeste care e al lui.
+	]]
+	MoveOther = 0.6,
+	WallOther = 0.6,
 	WallInvalid = 0.75,
 } :: { [string]: number }
+
+--[[
+	Muzica de fundal, in bucla, de la intrarea in joc pana la iesire.
+
+	Sta mult sub sunetele meciului: e decor, nu informatie. O mutare sau un zid
+	trebuie sa se auda peste ea, nu sa se amestece in ea. Butonul de sunet o
+	opreste odata cu restul. `Id = 0` o stinge de tot.
+]]
+GameConfig.Music = {
+	Id = 1848354536,
+	Volume = 0.2,
+}
 
 --[[
 	Sunetele care ies din lume, nu din interfata: zidul cand se aseaza, zidul
@@ -472,6 +726,22 @@ GameConfig.WorldSound = {
 		volumul grupului, la el pe client, fara sa atinga pe nimeni altcineva.
 	]]
 	Group = "BarricadeWorld",
+
+	--[[
+		Se aud sunetele pe care si le poarta skinurile?
+
+		Fiecare skin are in `Skins` sunetul lui de asezare — lemn, piatra, fulger
+		— si se auzea de pe zidul insusi, deci de la locul lui de pe masa. E o
+		idee buna si ramane in date: `Skins.PlaceSound` nu se sterge, iar
+		`Barricade.playSound` e neatins.
+
+		Cat timp e `false`, nu se aude. Zidul are acum doua sunete care spun ceva
+		mai important decat din ce e facut — al tau si al lui, vezi
+		`GameConfig.Sounds` — iar peste ele sunetul skinului nu adauga o
+		informatie, ci un al doilea zgomot in aceeasi clipa. Pus pe `true`, se
+		aud amandoua.
+	]]
+	SkinSounds = false,
 }
 
 return GameConfig

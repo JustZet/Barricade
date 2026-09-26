@@ -31,7 +31,7 @@ local TINT = {
 	Legal = Color3.fromHex("7fd06a"),
 	Hover = Color3.fromHex("ffe08a"),
 	Selected = Color3.fromHex("ffd666"),
-	Goal = Color3.fromHex("e8b32b"),
+	Goal = Color3.fromHex(string.format("%06X", GameConfig.GoalColor)),
 }
 
 export type CellState = "IDLE" | "LEGAL" | "HOVER" | "SELECTED"
@@ -189,6 +189,18 @@ function Platform.new(parent: Instance, origin: CFrame?): Platform
 
 	indexCells(self, model, true)
 	freeTheSurface(self, model)
+
+	--[[
+		Liniutele aurii de pe rama (`tick_file_*`, `tick_rank_*`) pleaca din copie.
+		Pe mijlocul ramei trece acum bara de lumina din `BoardRim`, iar liniutele
+		stateau chiar pe drumul ei, ca niste cuie in sant. Modelul din `Assets`
+		ramane intreg; doar masa de meci e fara ele.
+	]]
+	for _, piece in model:GetDescendants() do
+		if piece:IsA("BasePart") and string.sub(piece.Name, 1, 5) == "tick_" then
+			piece:Destroy()
+		end
+	end
 
 	self.Sounds = Instance.new("Folder")
 	self.Sounds.Name = "Sounds"

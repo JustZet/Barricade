@@ -24,6 +24,7 @@ local UserInputService = game:GetService("UserInputService")
 
 local Shared = ReplicatedStorage.Shared
 local BoardState = require(Shared.BoardState)
+local BoardUtils = require(Shared.BoardUtils)
 local GameConfig = require(Shared.GameConfig)
 local Loadout = require(Shared.Loadout)
 local MovementRules = require(Shared.MovementRules)
@@ -33,6 +34,7 @@ local Types = require(Shared.Types)
 
 local World = ReplicatedStorage:WaitForChild("World")
 local Barricade = require(World.Barricade)
+local BoardRim = require(World.BoardRim)
 local Platform = require(World.Platform)
 
 type BoardState = Types.BoardState
@@ -74,6 +76,11 @@ type ControllerFields = {
 		ar exista doua raspunsuri la "unde cade zidul", si s-ar contrazice.
 	]]
 	Hover: { X: number, Y: number, Orientation: "Horizontal" | "Vertical" }?,
+	--[[
+		Ultimul punct de pe ecran catre care s-a tintit, pentru dispozitivele
+		fara cursor. Vezi `updateHover`.
+	]]
+	Aim: Vector2?,
 	-- Priveste de sus, in loc de inclinat. Se schimba din butonul VIEW.
 	TopDown: boolean,
 	--[[
@@ -84,6 +91,16 @@ type ControllerFields = {
 	Pitch: number?,
 	CameraMove: RBXScriptConnection?,
 	--[[
+		Slotul din care a fost asezata camera ultima oara.
+
+		Masa se leaga si starea soseste pe doua drumuri separate. La un meci nou
+		dupa unul pierdut, legarea putea castiga cursa: camera se aseza dupa
+		slotul din meciul **trecut**, iar daca intre timp locurile se schimbasera
+		priveai masa din partea adversarului. Tinut minte, `onState` vede cand
+		slotul adevarat difera de cel dupa care s-a asezat camera, si o reaseaza.
+	]]
+	AimedSlot: number?,
+	--[[
 		A plecat deja camera spre castigator?
 
 		Starea finala vine de mai multe ori — la fluierul final, si la orice
@@ -92,6 +109,8 @@ type ControllerFields = {
 		mesei si ar lua-o de la capat.
 	]]
 	Celebrating: boolean,
+	-- Bara de lumina de pe rama tablei. Exista cat e legata o masa.
+	Rim: BoardRim.BoardRim?,
 }
 
 export type WorldController = typeof(setmetatable({} :: ControllerFields, WorldController))
@@ -214,6 +233,7 @@ function WorldController.new(): WorldController
 
 	self.Mode = "IDLE"
 	self.Orientation = "Horizontal"
+	self.Aim = nil :: Vector2?
 	self.TopDown = false
 	self.Celebrating = false
 	self.Connections = {}
@@ -274,11 +294,23 @@ function WorldController.new(): WorldController
 		end)
 	)
 
+	--[[
+		Fantoma urmareste si degetul, nu doar cursorul.
+
+		Pe telefon nu exista „deasupra": degetul e ori pe ecran, ori nicaieri.
+		Cat timp fantoma se misca numai din `MouseMovement`, pe telefon nu se
+		misca niciodata — zidul se punea orb, unde nimereai, iar regula care
+		interzice inchiderea drumului nu se poate ghici fara sa vezi verdictul.
+		Tras cu degetul, fantoma merge dupa el si spune verde sau rosu inainte de
+		orice asezare.
+	]]
 	table.insert(
 		self.Connections,
 		UserInputService.InputChanged:Connect(function(input)
 			if input.UserInputType == Enum.UserInputType.MouseMovement then
 				self:updateHover()
+			elseif input.UserInputType == Enum.UserInputType.Touch and self.Mode == "WALL" then
+				self:updateHover(Vector2.new(input.Position.X, input.Position.Y))
 			end
 		end)
 	)
@@ -303,11 +335,10 @@ function WorldController.new(): WorldController
 			if processed or self.Mode ~= "WALL" then
 				return
 			end
-			if
-				input.UserInputType == Enum.UserInputType.MouseButton1
-				or input.UserInputType == Enum.UserInputType.Touch
-			then
+			if input.UserInputType == Enum.UserInputType.MouseButton1 then
 				self:placeWall()
+			elseif input.UserInputType == Enum.UserInputType.Touch then
+				self:touchWall(Vector2.new(input.Position.X, input.Position.Y))
 			end
 		end)
 	)
@@ -381,20 +412,22 @@ function WorldController.shot(self: WorldController): Shot?
 	local towardHighRows = (goalEdge - homeEdge).Unit
 
 	--[[
-		Fiecare jucator priveste dinspre marginea lui. Slotul 1 porneste jos si
-		urca, slotul 2 invers; pentru restul modurilor, obiectivul din stare
-		spune incotro trebuie sa ajunga.
+		Fiecare jucator priveste dinspre marginea de pe care a plecat, cu fata
+		spre tabla. Se citeste din pozitia de start, nu din obiectiv: in modurile
+		cu centru obiectivul e acelasi pentru toti si n-ar spune din ce parte
+		vine fiecare — toti ar fi privit din locul slotului 1.
 	]]
-	local objective = state.Players[slot].Objective
+	local mode = GameConfig.Modes[state.GameMode]
+	local start = mode and mode.Slots[slot] and mode.Slots[slot].Start
 	local forward = towardHighRows
-	if objective.Edge == "Y_MIN" then
+	if start and start.Y == state.Size then
 		forward = -towardHighRows
-	elseif objective.Edge == "X_MAX" or objective.Edge == "X_MIN" then
+	elseif start and (start.X == 1 or start.X == state.Size) and start.Y ~= 1 then
 		local left = platform:cellTop(1, 1)
 		local right = platform:cellTop(state.Size, 1)
 		if left and right then
 			local towardHighFiles = (right - left).Unit
-			forward = if objective.Edge == "X_MAX" then towardHighFiles else -towardHighFiles
+			forward = if start.X == 1 then towardHighFiles else -towardHighFiles
 		end
 	end
 
@@ -433,6 +466,85 @@ function WorldController.stopCameraMove(self: WorldController)
 end
 
 --[[
+	Unde se vede pe ecran un loc de pe masa, in pixeli: deasupra pionului de pe
+	celula, sau peste baricada. Iese din aceleasi `cellTop` si `cframeForWall`
+	care aseaza avatarele si zidurile.
+
+	`nil` cand locul e in spatele camerei sau masa nu e inca legata. Viewport-ul
+	incepe din coltul ecranului, la fel ca un `ScreenGui` cu `IgnoreGuiInset`.
+]]
+function WorldController.screenPoint(
+	self: WorldController,
+	cell: Types.Cell,
+	wall: Types.Wall?
+): Vector2?
+	local platform = self.Platform
+	local camera = workspace.CurrentCamera
+	if not (platform and camera) then
+		return nil
+	end
+
+	local world: Vector3? = nil
+	if wall then
+		local frame = platform:cframeForWall(wall.X, wall.Y, wall.Orientation)
+		world = frame and frame.Position
+	else
+		local top = platform:cellTop(cell.X, cell.Y)
+		world = top and top + Vector3.new(0, GameConfig.Callouts.WorldLift, 0)
+	end
+	if not world then
+		return nil
+	end
+
+	local point, visible = camera:WorldToViewportPoint(world)
+	if not visible then
+		return nil
+	end
+	return Vector2.new(point.X, point.Y)
+end
+
+--[[
+	Un tremur scurt al camerei, pentru callout-urile mari.
+
+	Merge pe `CameraMove`, ca orice alta miscare: nu porneste peste o rotire
+	in curs sau peste plecarea spre castigator, iar o comanda noua de camera il
+	opreste pe loc. Fiecare cadru scoate deplasarea de dinainte si o pune pe
+	cea noua, deci la final camera ramane exact unde era.
+]]
+function WorldController.shakeCamera(self: WorldController)
+	local camera = workspace.CurrentCamera
+	if not (camera and self.Platform) or self.CameraMove or self.Celebrating then
+		return
+	end
+
+	local amount = GameConfig.Callouts.ShakeAmount
+	local seconds = GameConfig.Callouts.ShakeSeconds
+	local began = os.clock()
+	local applied = CFrame.identity
+
+	self.CameraMove = RunService.RenderStepped:Connect(function()
+		local live = workspace.CurrentCamera
+		if not live then
+			self:stopCameraMove()
+			return
+		end
+
+		local base = live.CFrame * applied:Inverse()
+		local left = 1 - (os.clock() - began) / seconds
+		if left <= 0 then
+			live.CFrame = base
+			self:stopCameraMove()
+			return
+		end
+
+		local strength = amount * left
+		applied =
+			CFrame.new((math.random() * 2 - 1) * strength, (math.random() * 2 - 1) * strength, 0)
+		live.CFrame = base * applied
+	end)
+end
+
+--[[
 	Duce camera la unghiul cerut de perspectiva curenta.
 
 	`animate` e adevarat doar cand jucatorul apasa VIEW. La legarea mesei sau la
@@ -456,6 +568,7 @@ function WorldController.aimCamera(self: WorldController, animate: boolean?)
 	self:stopCameraMove()
 	camera.CameraType = Enum.CameraType.Scriptable
 	camera.CameraSubject = nil
+	self.AimedSlot = self.Slot
 
 	local target = if self.TopDown then GameConfig.Camera.TopPitch else GameConfig.Camera.Pitch
 	local from = self.Pitch
@@ -577,7 +690,14 @@ function WorldController.followWinner(self: WorldController, slot: number?)
 		local progress = math.clamp((os.clock() - began) / seconds, 0, 1)
 		local eased =
 			TweenService:GetValue(progress, Enum.EasingStyle.Quint, Enum.EasingDirection.Out)
-		live.CFrame = from:Lerp(winnerFrame(if winner then winner.Character else nil, cell), eased)
+		local character = if winner then winner.Character else nil
+		live.CFrame = from:Lerp(winnerFrame(character, cell), eased)
+
+		local root = character and character:FindFirstChild("HumanoidRootPart")
+		local focus = if root and root:IsA("BasePart")
+			then root.Position
+			else cell + Vector3.new(0, 3, 0)
+		self:fadeOccluders(live.CFrame.Position, focus)
 	end)
 end
 
@@ -588,11 +708,36 @@ function WorldController.bindArena(self: WorldController)
 	end
 	self.CellConnections = {}
 	self.Platform = nil
+	-- Rama se strange odata cu masa ei; cea noua se face cand se leaga tabla.
+	if self.Rim then
+		self.Rim:destroy()
+		self.Rim = nil
+	end
 	-- Masa noua, ceremonie noua: urmatorul meci are voie sa se termine si el.
 	self.Celebrating = false
+	self.AimedSlot = nil
+
+	--[[
+		Fantoma apartine mesei pe care a fost facuta.
+
+		E parintita in modelul tablei, iar cand serverul darama masa o ia cu ea.
+		Tinuta mai departe, meciul urmator o muta pe tabla noua ca pe un model
+		viu, desi nu mai e in lume — deci nu se mai vedea nicio previzualizare,
+		nici verde, nici rosie. Se arunca odata cu masa si se reface pe cea noua.
+	]]
+	self:dropGhost()
+	self.Hover = nil
+	self.Aim = nil
 
 	local arenaId = LOCAL_PLAYER:GetAttribute("ArenaId")
 	if typeof(arenaId) ~= "string" then
+		--[[
+			Starea meciului trecut pleaca si ea. Pastrata, prima legare a mesei
+			urmatoare ar aseza camera dupa slotul vechi si ar aprinde celulele
+			vechiului meci pana la sosirea starii noi.
+		]]
+		self.State = nil
+		self.Slot = nil
 		-- Fara meci nu exista masa: jucatorul se intoarce la mersul lui prin lobby.
 		setControls(true)
 		self:stopCameraMove()
@@ -630,6 +775,9 @@ function WorldController.bindArena(self: WorldController)
 
 	local platform = Platform.attach(model)
 	self.Platform = platform
+	self.Rim = BoardRim.new(model, function(x: number, y: number): Vector3?
+		return platform:cellTop(x, y)
+	end, GameConfig.BoardSize)
 	setControls(false)
 	self.CellConnections = platform:onCellClicked(function(x, y)
 		self:onCellClicked(x, y)
@@ -671,6 +819,21 @@ function WorldController.onState(self: WorldController, snapshot: any)
 		end
 	end
 
+	--[[
+		Camera se reaseaza cand afla ca a privit din locul altcuiva.
+
+		Nu si dupa fluierul final: acolo o duce `followWinner`, iar o reasezare
+		ar smulge-o de pe castigator.
+	]]
+	if
+		self.Platform
+		and self.Slot ~= nil
+		and self.Slot ~= self.AimedSlot
+		and state.Status ~= "FINISHED"
+	then
+		self:aimCamera()
+	end
+
 	self:paintGoal()
 	self:refresh()
 	self:updateHover()
@@ -683,6 +846,16 @@ function WorldController.onState(self: WorldController, snapshot: any)
 	if state.Status == "FINISHED" and not self.Celebrating then
 		self.Celebrating = true
 		self:followWinner(state.Winner)
+
+		-- Rama sarbatoreste si ea, in culoarea castigatorului.
+		local rim = self.Rim
+		if rim and state.Winner then
+			local perMode = GameConfig.TeamColors[state.GameMode]
+			local hex = if perMode
+				then perMode[state.Winner]
+				else GameConfig.SlotColors[state.Winner]
+			rim:victory(if hex then Color3.fromHex(string.format("%06X", hex)) else nil)
+		end
 	end
 end
 
@@ -720,16 +893,23 @@ local function homeCells(state: BoardState, slot: number): { { X: number, Y: num
 end
 
 --[[
-	Coloreaza marginile, o data per meci.
+	Coloreaza tabla, o data per meci.
 
-	Fiecare jucator isi primeste marginea in culoarea lui, si toti le vad pe
-	toate: asa se citeste dintr-o privire si de unde ai plecat, si incotro
-	trebuie sa ajungi — tinta ta e marginea adversarului.
+	Celulele pe care se termina meciul iau `GameConfig.GoalColor`, aceeasi in
+	toate modurile: randul de pe partea cealalta in 1v1, celula din centru cand
+	sunt trei sau patru. Marginile de pornire iau culoarea jucatorului, ca sa se
+	vada si de unde a plecat fiecare.
+
+	Tinta aratata e a ta: in 1v1 randul tau de sosire e chiar casa
+	adversarului, iar acolo castiga turcoazul. Cine priveste fara sa joace vede
+	tintele tuturor.
 
 	E o tenta, nu o vopsea: peste ea trebuie sa se mai vada verdele mutarilor
-	legale, iar lemnul tablei nu are voie sa dispara sub culoare.
+	legale, iar lemnul tablei nu are voie sa dispara sub culoare. Tinta e mai
+	apasata decat casele, fiindca ea e cea care trebuie gasita.
 ]]
 local HOME_TINT = 0.28
+local GOAL_TINT = 0.5
 
 function WorldController.paintGoal(self: WorldController)
 	local platform, state = self.Platform, self.State
@@ -740,19 +920,33 @@ function WorldController.paintGoal(self: WorldController)
 		return
 	end
 
+	local goals: { { X: number, Y: number } } = {}
+	local isGoal: { [string]: boolean } = {}
+	for slot, player in state.Players do
+		if self.Slot == nil or slot == self.Slot then
+			for _, cell in BoardUtils.getTargetCells(player.Objective) do
+				local id = BoardUtils.cellKey(cell)
+				if not isGoal[id] then
+					isGoal[id] = true
+					table.insert(goals, cell)
+				end
+			end
+		end
+	end
+
 	for slot in state.Players do
-		local cells = homeCells(state, slot)
+		local cells = {}
+		for _, cell in homeCells(state, slot) do
+			if not isGoal[BoardUtils.cellKey(cell)] then
+				table.insert(cells, cell)
+			end
+		end
 		if #cells > 0 then
 			platform:paintGoal(cells, slotColor(state, slot), HOME_TINT)
 		end
 	end
 
-	-- In modurile cu obiectiv la centru, tinta e o singura celula.
-	local anySlot = next(state.Players)
-	local objective = if anySlot then state.Players[anySlot].Objective else nil
-	if objective and objective.Kind == "CENTER" and objective.Cell then
-		platform:paintGoal({ { X = objective.Cell.X, Y = objective.Cell.Y } }, nil, 0.45)
-	end
+	platform:paintGoal(goals, nil, GOAL_TINT)
 end
 
 --[[
@@ -790,7 +984,7 @@ end
 	Verdictul il da tot `WallRules`, pe starea de la server. Nu e o a doua
 	implementare a regulii, ci aceeasi functie intrebata mai devreme.
 ]]
-function WorldController.updateHover(self: WorldController)
+function WorldController.updateHover(self: WorldController, point: Vector2?)
 	local platform, state, slot = self.Platform, self.State, self.Slot
 	local camera = workspace.CurrentCamera
 	if not (platform and state and slot and camera) then
@@ -804,8 +998,28 @@ function WorldController.updateHover(self: WorldController)
 		return
 	end
 
-	local mouse = UserInputService:GetMouseLocation()
-	local ray = camera:ViewportPointToRay(mouse.X, mouse.Y)
+	--[[
+		Unde se tinteste.
+
+		Cu mouse, raspunsul e mereu acelasi: unde sta cursorul, fiindca el sta
+		undeva si cand nu apesi. Cu degetul nu exista asa ceva — ridicat, degetul
+		nu e nicaieri — deci ultima tintire se tine minte. Fara ea, rotirea din
+		buton ar arunca fantoma: `refresh` cheama `updateHover` fara punct, si pe
+		telefon n-ar mai fi de unde sa-l ia.
+	]]
+	if point then
+		self.Aim = point
+	end
+
+	local aim = if UserInputService.MouseEnabled
+		then UserInputService:GetMouseLocation()
+		else self.Aim
+	if not aim then
+		self:hideHover()
+		return
+	end
+
+	local ray = camera:ViewportPointToRay(aim.X, aim.Y)
 	local params = RaycastParams.new()
 	params.FilterType = Enum.RaycastFilterType.Include
 	params.FilterDescendantsInstances = { platform.Model }
@@ -839,6 +1053,12 @@ function WorldController.updateHover(self: WorldController)
 	end
 
 	local verdict = WallRules.isValidWallPlacement(state, slot, bestX, bestY, self.Orientation)
+
+	-- O fantoma ramasa pe alta masa, sau luata de pe lume cu ea, nu se mai vede.
+	local stale = self.Ghost
+	if stale and not stale.Model:IsDescendantOf(platform.Model) then
+		self:dropGhost()
+	end
 
 	if self.Ghost == nil then
 		self.Ghost = Barricade.new(
@@ -998,7 +1218,7 @@ end
 ]]
 local PRESS_GAP = 0.2
 
-function WorldController.placeWall(self: WorldController)
+function WorldController.placeWall(self: WorldController, point: Vector2?)
 	local state = self.State
 	if not state or state.Status ~= "PLAYING" then
 		return
@@ -1009,7 +1229,7 @@ function WorldController.placeWall(self: WorldController)
 		return
 	end
 
-	self:updateHover()
+	self:updateHover(point)
 
 	local hover = self.Hover
 	if not hover then
@@ -1018,6 +1238,49 @@ function WorldController.placeWall(self: WorldController)
 
 	self.LastWallRequest = now
 	Remotes.get("RequestPlaceWall"):FireServer(hover.X, hover.Y, hover.Orientation)
+
+	--[[
+		Tintirea se uita dupa ce zidul a plecat.
+
+		Pastrata, pe telefon urmatoarea tura ar incepe cu fantoma deja asezata
+		acolo unde a cazut cea dinainte — si atunci **prima** atingere in locul
+		ala ar fi luata drept confirmare, adica exact plasarea din greseala pe
+		care o taie regula celor doua atingeri.
+	]]
+	self.Aim = nil
+	self:hideHover()
+end
+
+--[[
+	Zidul, pus cu degetul: o atingere tinteste, a doua aseaza.
+
+	Pe mouse cele doua sunt deja separate — muti cursorul, vezi verdictul, si
+	abia apoi apesi. Degetul face amandoua deodata: atingi si ai si pus. Iar
+	singura regula grea a jocului — ca nu ai voie sa inchizi complet drumul
+	cuiva — se citeste doar din fantoma, adica din ceva ce pe telefon nu apuca
+	sa se vada niciodata.
+
+	Asa, prima atingere aduce fantoma sub deget si o coloreaza; a doua, pe
+	aceeasi intersectie, o aseaza. Intre ele poti trage degetul, sau roti din
+	buton, si nimic nu pleaca la server pana nu confirmi acolo unde vezi.
+]]
+function WorldController.touchWall(self: WorldController, point: Vector2)
+	local before = self.Hover
+	self:updateHover(point)
+
+	local aimed = self.Hover
+	if not aimed then
+		return
+	end
+
+	local confirms = before ~= nil
+		and before.X == aimed.X
+		and before.Y == aimed.Y
+		and before.Orientation == aimed.Orientation
+
+	if confirms then
+		self:placeWall(point)
+	end
 end
 
 function WorldController.destroy(self: WorldController)
@@ -1033,6 +1296,143 @@ function WorldController.destroy(self: WorldController)
 	if self.Ghost then
 		self.Ghost:destroy()
 		self.Ghost = nil
+	end
+	if self.Rim then
+		self.Rim:destroy()
+		self.Rim = nil
+	end
+end
+
+--[[
+	Latura de pe care a plecat un jucator, cu numele laturii ramei. Se citeste
+	din `GameConfig`, ca `homeCells`: starea stie doar unde e acum.
+]]
+local function homeSide(state: BoardState, slot: number): BoardRim.Side?
+	local mode = GameConfig.Modes[state.GameMode]
+	local start = mode and mode.Slots[slot] and mode.Slots[slot].Start
+	if not start then
+		return nil
+	end
+	if start.Y == 1 then
+		return "Y1"
+	elseif start.Y == state.Size then
+		return "Y9"
+	elseif start.X == 1 then
+		return "X1"
+	elseif start.X == state.Size then
+		return "X9"
+	end
+	return nil
+end
+
+--[[
+	Rama raspunde la callout-urile unei actiuni.
+
+	Primul din lista — cel mai important — hotaraste treapta: mic, mare sau
+	epic, dupa marimea lui. Efectul pleaca de unde s-a intamplat: de pe
+	baricada, sau de sub pionul care a sarit. Peste el, seria de blocaje isi
+	pune caruselul si insigna, iar partea celui blocat ingheata.
+
+	Aceeasi pentru toti de la masa: e un eveniment al tablei, nu al cuiva.
+]]
+function WorldController.playRim(self: WorldController, list: { any })
+	local rim, platform, state = self.Rim, self.Platform, self.State
+	if not (rim and platform and state) then
+		return
+	end
+
+	local function origin(callout: any): Vector3?
+		local wall = callout.Wall
+		if type(wall) == "table" and type(wall.X) == "number" and type(wall.Y) == "number" then
+			local frame = platform:cframeForWall(wall.X, wall.Y, wall.Orientation)
+			if frame then
+				return frame.Position
+			end
+		end
+		local cell = callout.Cell
+		if type(cell) == "table" and type(cell.X) == "number" and type(cell.Y) == "number" then
+			return platform:cellTop(cell.X, cell.Y)
+		end
+		return nil
+	end
+
+	local lead = list[1]
+	local at = if type(lead) == "table" then origin(lead) else nil
+	if not at then
+		return
+	end
+
+	local tier = if type(lead.Tier) == "number" then lead.Tier else 1
+	if tier >= 3 then
+		rim:mega()
+	elseif tier == 2 then
+		rim:big()
+	else
+		rim:small(at)
+	end
+
+	for _, callout in list do
+		if type(callout) ~= "table" then
+			continue
+		end
+		local where = origin(callout) or at
+		if type(callout.Streak) == "number" and callout.Streak >= 2 then
+			rim:combo(callout.Streak, where)
+		end
+		if
+			type(callout.Target) == "number"
+			and string.sub(tostring(callout.Id), 1, 5) == "BLOCK"
+		then
+			local side = homeSide(state, callout.Target)
+			if side then
+				rim:frost(side :: BoardRim.Side)
+			end
+		end
+	end
+end
+
+--[[
+	Baricadele dintre camera si castigator se fac pe jumatate stravezii.
+
+	Camera coboara in fata omului, la inaltimea lui, iar un zid pus acolo in
+	timpul meciului i-ar acoperi tocmai momentul lui. Se estompeaza doar pe
+	ecranul asta (`LocalTransparencyModifier`) si doar zidurile care chiar stau
+	intre ochi si om — celelalte raman cum sunt, ca tabla sa se citeasca in
+	continuare. Trecerea e moale, cadru cu cadru, cat se misca si camera.
+]]
+local OCCLUDED = 0.75
+
+function WorldController.fadeOccluders(self: WorldController, eye: Vector3, focus: Vector3)
+	local platform = self.Platform
+	if not platform then
+		return
+	end
+
+	local span = focus - eye
+	local length = span.Magnitude
+	if length < 0.01 then
+		return
+	end
+	local direction = span / length
+	local a, b = platform:cellTop(1, 1), platform:cellTop(2, 1)
+	local step = if a and b then (b - a).Magnitude else 7
+
+	for _, child in platform.Model:GetChildren() do
+		if not (child:IsA("Model") and string.sub(child.Name, 1, 10) == "Barricade_") then
+			continue
+		end
+		local center = child:GetBoundingBox().Position
+		local along = math.clamp((center - eye):Dot(direction), 0, length)
+		local between = along > 0.5 and along < length - 1
+		local close = (center - (eye + direction * along)).Magnitude < step * 1.1
+		local target = if between and close then OCCLUDED else 0
+
+		for _, piece in child:GetDescendants() do
+			if piece:IsA("BasePart") then
+				local now = piece.LocalTransparencyModifier
+				piece.LocalTransparencyModifier = now + (target - now) * 0.2
+			end
+		end
 	end
 end
 

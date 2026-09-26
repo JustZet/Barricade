@@ -18,15 +18,20 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Shared = ReplicatedStorage.Shared
 local BoardState = require(Shared.BoardState)
+local Callouts = require(Shared.Callouts)
 local Catalog = require(Shared.Catalog)
+local Emotes = require(Shared.Emotes)
 local GameConfig = require(Shared.GameConfig)
 local Loadout = require(Shared.Loadout)
 local MovementRules = require(Shared.MovementRules)
+local RematchVote = require(Shared.RematchVote)
 local Remotes = require(Shared.Remotes)
 local Types = require(Shared.Types)
 local WallRules = require(Shared.WallRules)
 
+local EmoteBubble = require(script.Parent.Parent.UI.EmoteBubble)
 local SoundController = require(script.Parent.SoundController)
+local SocialController = require(script.Parent.SocialController)
 local Pocket = require(script.Parent.Parent.Pocket)
 local InputController = require(script.Parent.InputController)
 
@@ -57,12 +62,46 @@ local REJECTION_TEXT: { [string]: string } = {
 	PURCHASE_POOR = "You do not have enough coins.",
 	PURCHASE_NOT_FOR_SALE = "That item is not for sale yet.",
 	PURCHASE_REFUSED = "Purchase refused.",
+	GIFT_OWNED = "You already have that one.",
 	-- La fel si la echipare: butonul e stins peste ce nu se poate, deci pana
 	-- aici ajunge doar un client care a cerut ceva ce nu vedea pe ecran.
 	EQUIP_UNKNOWN = "That item does not exist.",
 	EQUIP_LOCKED = "You do not own that yet.",
 	EQUIP_REFUSED = "Could not equip that.",
+	-- Revansa: butonul se stinge, iar randul asta spune de ce.
+	REMATCH_UNAVAILABLE = "No rematch: someone has already left the table.",
+	REMATCH_CLOSED = "The rematch vote is already over.",
+	REMATCH_NOT_SEATED = "You are not at this table.",
+	REMATCH_ALONE = "There is nobody left to play with.",
 }
+
+--[[
+	Care refuzuri se aud, si care raman doar scrise.
+
+	Bufnitura e raspunsul la un zid care nu intra — acolo ai tintit un rost, ai
+	vazut fantoma rosie si ai apasat oricum, iar sunetul e confirmarea. La o
+	mutare nu e nimic de confirmat: celulele in care poti intra sunt aprinse
+	verde tot timpul, deci un clic in alta parte nu e o incercare respinsa, ci o
+	apasare pe langa. Pana acum suna la fel de grav ca un zid refuzat.
+
+	Ce nu e aici tace: propozitia de pe ecran spune tot.
+]]
+local NOISY_REJECTIONS: { [string]: true } = {
+	WALL_CONFLICT = true,
+	NO_BARRICADES_LEFT = true,
+	BAD_ORIENTATION = true,
+}
+
+local function isNoisy(reason: string?): boolean
+	if not reason then
+		return false
+	end
+	if NOISY_REJECTIONS[reason] then
+		return true
+	end
+	-- „Ar ingropa pe cineva" e tot un refuz de zid, si inca cel mai important.
+	return string.match(reason, "^WOULD_BLOCK_PLAYER_%d+$") ~= nil
+end
 
 local GameController = {}
 GameController.__index = GameController
@@ -87,6 +126,24 @@ type ControllerFields = {
 		sari peste ceremonia pe care tocmai o asteapta.
 	]]
 	VictoryPending: boolean,
+	--[[
+		S-a spus deja, o data in sesiunea asta, ce se face la rand.
+
+		O singura data si numai la prima tura proprie: e pentru cine intra intai
+		oara, si dupa aceea e zgomot. Nu se tine minte intre sesiuni — n-avem
+		unde — dar pe cineva care joaca a doua partida il costa o propozitie
+		citita o data, nu la fiecare meci.
+	]]
+	HintShown: boolean,
+	--[[
+		Ai cerut sa pleci si serverul inca nu te-a scos.
+
+		Cat timp e adevarat, interfata de meci nu se mai reface din starile care
+		mai vin — nici HUD-ul, nici panoul de victorie. Lumea 3D le primeste in
+		continuare pe ale ei, fiindca tocmai ea are ce arata in intervalul asta:
+		camera care pleaca spre castigator.
+	]]
+	Leaving: boolean,
 }
 
 export type GameController = typeof(setmetatable({} :: ControllerFields, GameController))
@@ -102,6 +159,8 @@ function GameController.new(views: { [string]: any }): GameController
 	self.Hovered = nil :: { X: number, Y: number }?
 	self.MatchSignature = nil :: string?
 	self.VictoryPending = false
+	self.HintShown = false
+	self.Leaving = false
 
 	self:wireViews()
 	self:wireRemotes()
@@ -204,6 +263,16 @@ function GameController.wireViews(self: GameController)
 			views.Hud:setSoundEnabled(SoundController.toggle())
 		end,
 		--[[
+			Emote-ul pleaca ca id si atat, ca orice alta cerere. Nu se deseneaza
+			nimic local: balonul propriu vine tot de la server, prin `MatchEvent`,
+			odata cu al celorlalti. Asa toti vad acelasi lucru in aceeasi clipa,
+			iar daca serverul refuza — esti prea repede, nu esti in meci — nu
+			ramane pe ecranul tau un balon pe care nimeni altcineva nu l-a vazut.
+		]]
+		onEmote = function(id: string)
+			Remotes.get("RequestEmote"):FireServer(id)
+		end,
+		--[[
 			Perspectiva o tine lumea, nu interfata. Butonul doar cere schimbarea si
 			isi scrie eticheta din ce raspunde ea, ca sa nu existe doua pareri
 			despre cum se priveste masa acum.
@@ -216,21 +285,66 @@ function GameController.wireViews(self: GameController)
 				views.Hud:setTopDown(world:toggleView())
 			end
 		end,
+		--[[
+			Plecarea se intreaba o data.
+
+			Butonul sta in coltul de jos, langa sunet si perspectiva, si se apasa
+			din greseala — dar spre deosebire de ele, incheie partida si o da
+			castigata celuilalt. Fara fereastra, nu exista niciun pas inapoi.
+		]]
 		onLeave = function()
+			local confirm = views.Confirm
+			if not confirm then
+				self:leaveMatch()
+				return
+			end
+			confirm:ask({
+				Title = "LEAVE THE MATCH?",
+				Body = "The match counts as lost and the others win it. "
+					.. "You keep the coins for having played.",
+				Accept = "LEAVE",
+				Cancel = "STAY",
+			}, function(accepted: boolean)
+				if accepted then
+					self:leaveMatch()
+				end
+			end)
+		end,
+	})
+
+	--[[
+		Revansa se cere de pe ecranul de final si se voteaza in banner. Ecranul
+		ramane deschis: masa e aceeasi, iar raspunsul celorlalti vine peste el.
+	]]
+	views.Victory:setCallbacks({
+		onRematch = function()
+			views.Victory:setRematch("WAITING")
+			Remotes.get("RequestRematch"):FireServer()
+		end,
+		onAddFriend = function(userId: number)
+			SocialController.promptFriendRequest(userId)
+		end,
+		onLeave = function()
+			views.Victory:hide()
 			self:leaveMatch()
 		end,
 	})
 
-	views.Victory:setCallbacks({
-		onRematch = function()
-			views.Victory:hide()
-			Remotes.get("RequestRematch"):FireServer()
-		end,
-		onLeave = function()
-			views.Victory:hide()
-			self:leaveMatch()
-		end,
-	})
+	local rematch = views.Rematch
+	if rematch then
+		rematch:setCallbacks({
+			onAccept = function()
+				views.Victory:setRematch("WAITING")
+				Remotes.get("RequestRematch"):FireServer()
+			end,
+			onDecline = function()
+				Remotes.get("RequestRematchDecline"):FireServer()
+			end,
+			onClosed = function(accepted: boolean)
+				self:afterRematch(accepted)
+			end,
+		})
+	end
 end
 
 function GameController.wireRemotes(self: GameController)
@@ -314,18 +428,36 @@ end
 	oricum au nevoie de aceeasi interfata, deci nu conteaza ca se confunda.
 ]]
 function GameController.matchSignature(_self: GameController, state: BoardState): string
+	--[[
+		Cine joaca, nu cine mai e la rand.
+
+		Socotita din `TurnOrder`, semnatura se schimba in clipa in care cineva se
+		retrage — si atunci cardurile se dadeau jos si se refaceau, iar tabla se
+		golea, in mijlocul aceluiasi meci. `Players` tine toti oamenii pana la
+		capat, si asa semnatura se schimba doar cand chiar incepe alt meci.
+	]]
 	local ids = {}
-	for _, slot in state.TurnOrder do
-		local player = state.Players[slot]
-		if player then
-			table.insert(ids, string.format("%d:%d", slot, player.UserId))
-		end
+	for slot, player in state.Players do
+		table.insert(ids, string.format("%d:%d", slot, player.UserId))
 	end
 	table.sort(ids)
 	return state.GameMode .. "|" .. table.concat(ids, ",")
 end
 
 function GameController.onState(self: GameController, snapshot)
+	--[[
+		Cine a cerut sa plece nu mai primeste interfata de meci.
+
+		Starea finala i se trimite dinadins — ca lumea 3D sa stie cine a castigat
+		si sa duca camera pana la el — dar panoul de victorie nu-i mai apartine:
+		nu e victoria lui, si n-are de ce sa i se ofere revansa la un meci din
+		care tocmai a iesit. Se uita la ceremonie, si apoi il cheama serverul in
+		lobby.
+	]]
+	if self.Leaving then
+		return
+	end
+
 	local state = BoardState.fromSnapshot(snapshot)
 	self.State = state
 
@@ -338,6 +470,9 @@ function GameController.onState(self: GameController, snapshot)
 
 	local views = self.Views
 	views.Lobby:setVisible(false)
+	if views.Social then
+		views.Social:setInLobby(false)
+	end
 	views.Hud:setVisible(true)
 	views.Board.Container.Visible = true
 
@@ -384,10 +519,14 @@ function GameController.onState(self: GameController, snapshot)
 				self.VictoryPending = false
 				local now = self.State
 				if now and now.Status == "FINISHED" then
+					views.Victory:setFriends(self:strangers(now))
 					views.Victory:show(now, self.LocalSlot)
 				end
 			end)
 		elseif not self.VictoryPending then
+			if not views.Victory:isOpen() then
+				views.Victory:setFriends(self:strangers(state))
+			end
 			views.Victory:show(state, self.LocalSlot)
 		end
 	else
@@ -437,6 +576,21 @@ function GameController.refresh(self: GameController)
 			world:setInteraction("IDLE", {}, self.Orientation)
 		end
 		return
+	end
+
+	--[[
+		Prima tura din sesiune spune si ce se poate face in ea.
+
+		Celulele verzi arata *unde* poti merge, dar nu si ca se merge apasand pe
+		ele, si mai ales nu ca exista a doua actiune: zidul. Cine intra intai oara
+		vede o tabla frumoasa si nu stie ca butonul de jos e jumatate din joc.
+	]]
+	if not self.HintShown then
+		self.HintShown = true
+		views.Hud:showToast(
+			"Your turn — tap a green square to move, or BARRICADE to block a path.",
+			"HINT"
+		)
 	end
 
 	local legalMoves = if self.Mode == "MOVE"
@@ -508,9 +662,32 @@ end
 function GameController.onLobby(self: GameController, payload)
 	local views = self.Views
 	self:showWallet(true)
+	if views.Social then
+		views.Social:setInLobby(true)
+	end
 	views.Hud:setVisible(false)
 	views.Board.Container.Visible = false
 	views.Victory:hide()
+	--[[
+		Aici se incheie plecarea, oricum ar fi inceput ea. Si intrebarea se
+		inchide: daca meciul s-a terminat singur cat statea deschisa, nu mai are
+		ce sa confirme.
+	]]
+	self.Leaving = false
+	if views.Confirm then
+		views.Confirm:dismiss()
+	end
+	--[[
+		Baloanele tin de masa, nu de jucator. Lasate sa se stinga singure, ultimul
+		emote al partidei ar fi plutit deasupra cuiva prin lobby.
+	]]
+	EmoteBubble.clearAll()
+	if views.Rematch then
+		views.Rematch:hide()
+	end
+	if views.Callouts then
+		views.Callouts:clear()
+	end
 	self.MatchSignature = nil
 	self.State = nil
 	self.LocalSlot = nil
@@ -520,6 +697,23 @@ function GameController.onLobby(self: GameController, payload)
 	else
 		views.Lobby:showHome()
 	end
+end
+
+--[[
+	Sunetul unei fapte, ales dupa cine a facut-o.
+
+	Serverul spune in fiecare eveniment **al cui** slot e — asta se stia si pana
+	acum, doar ca nimeni nu se uita. Cine n-are inca slot, fiindca starea n-a
+	ajuns, aude varianta celuilalt: un spectator care intra in mijlocul unui meci
+	nu a mutat nimic, deci nimic din ce aude nu e al lui.
+
+	Numele se compun, nu se scriu in cazuri: `Move` plus `Self` sau `Other` da
+	cheia din `GameConfig.Sounds`. Un `if` cu patru ramuri ar fi trebuit tinut la
+	zi odata cu tabelul, si s-ar fi despartit de el la prima adaugare.
+]]
+function GameController.playByAuthor(self: GameController, slot: any, action: string)
+	local mine = self.LocalSlot ~= nil and slot == self.LocalSlot
+	SoundController.play(action .. (if mine then "Self" else "Other"))
 end
 
 function GameController.onEvent(self: GameController, payload)
@@ -534,9 +728,11 @@ function GameController.onEvent(self: GameController, payload)
 		views.Lobby:showCountdown(payload.Value)
 		SoundController.play("Countdown")
 	elseif payload.Type == "MoveApplied" then
-		SoundController.play("Move")
+		self:playByAuthor(payload.Slot, "Move")
+		self:showCallouts(payload.Callouts)
 	elseif payload.Type == "WallPlaced" then
-		SoundController.play("WallPlaced")
+		self:playByAuthor(payload.Slot, "Wall")
+		self:showCallouts(payload.Callouts)
 	elseif payload.Type == "TurnChanged" then
 		if payload.Slot == self.LocalSlot then
 			SoundController.play("TurnChange")
@@ -546,7 +742,17 @@ function GameController.onEvent(self: GameController, payload)
 		self.Hovered = nil
 		views.Board:hidePreview()
 		self:refresh()
+	elseif payload.Type == "Emote" then
+		self:showEmote(payload)
+	elseif payload.Type == "Rematch" then
+		self:onRematch(payload)
+	elseif payload.Type == "Payout" then
+		views.Victory:setRewards(if type(payload.Lines) == "table" then payload.Lines else {})
 	elseif payload.Type == "Victory" then
+		if views.Callouts then
+			views.Callouts:clear()
+		end
+		views.Victory:setSeries(self:seriesLabel(payload.Series))
 		SoundController.play("Victory")
 	elseif payload.Type == "Paused" then
 		views.Hud:showToast("A player disconnected. Waiting for them to return.")
@@ -558,11 +764,134 @@ function GameController.onEvent(self: GameController, payload)
 end
 
 --[[
+	Callout-urile unei actiuni, asa cum le-a hotarat serverul.
+
+	Verdictul vine gata facut; aici se alege doar cum se citeste de la locul
+	tau (`Callouts.format`) si unde se aseaza: pe masa 3D cand exista, altfel
+	pe tabla desenata. Al doilea callout al aceleiasi actiuni vine putin dupa
+	primul si mai sus, ca sa nu se suprapuna.
+
+	Datele vin de pe retea si se verifica la intrare: o celula fara coordonate
+	ar arunca eroarea tocmai in mijlocul evenimentului care muta pionul.
+]]
+local function isCell(value: any): boolean
+	return type(value) == "table" and type(value.X) == "number" and type(value.Y) == "number"
+end
+
+function GameController.showCallouts(self: GameController, list: any)
+	local views = self.Views
+	local view = views.Callouts
+	if not view or type(list) ~= "table" then
+		return
+	end
+
+	-- Rama tablei se aprinde odata cu textul, la toti de la masa.
+	if views.World and #list > 0 then
+		views.World:playRim(list)
+	end
+
+	local world = views.World
+	for index, callout in list do
+		if type(callout) ~= "table" or not isCell(callout.Cell) then
+			continue
+		end
+		local wall = if isCell(callout.Wall) and type(callout.Wall.Orientation) == "string"
+			then callout.Wall
+			else nil
+
+		local state = self.State
+		local author = state and state.Players[callout.Slot]
+		local me = state and self.LocalSlot and state.Players[self.LocalSlot]
+		local allied = author ~= nil and me ~= nil and author ~= me and author.Team == me.Team
+		local presented = Callouts.format(callout, self.LocalSlot, author and author.Name, allied)
+		if not presented then
+			continue
+		end
+
+		local point = if world
+			then world:screenPoint(callout.Cell, wall)
+			else views.Board:screenPoint(callout.Cell, wall)
+
+		view:show(presented, point, {
+			Delay = (index - 1) * GameConfig.Callouts.Stagger,
+			Index = index - 1,
+			OnImpact = if world
+				then function()
+					world:shakeCamera()
+				end
+				else nil,
+		})
+	end
+end
+
+--[[
+	Emote-ul cuiva de la masa: sunetul, si balonul deasupra lui.
+
+	Id-ul se cauta din nou in catalog, desi serverul l-a verificat inainte sa-l
+	trimita. Nu din neincredere in server, ci pentru ca asa nu exista drum prin
+	care un simbol nestiut sa ajunga pe ecran — nici daca catalogul se schimba
+	si un client ramane cu versiunea veche.
+
+	Balonul sta pe cardul jucatorului, nu deasupra capului lui.
+
+	Deasupra capului a fost prima incercare, si parea evidenta — acolo se pune
+	un balon de vorba. Dar meciul se joaca privind masa de sus, de la vreo suta
+	de studi, iar la distanta aia un balon destul de mare cat sa i se vada semnul
+	acopera mai mult decat celula pe care stai: ori e prea mic ca sa se
+	citeasca, ori prea mare ca sa nu incurce. Nu e o marime de nimerit, e o
+	pozitie gresita.
+
+	Cardul rezolva amandoua: e sus, unde nu e tabla, are marime fixa pe ecran
+	deci semnul se citeste mereu la fel, si poarta deja chipul si numele omului —
+	„cine a spus" se vede fara sa mai lege nimeni balonul de un avatar.
+
+	Deasupra capului ramane pentru cine n-are card: un jucator a carui placuta
+	inca nu s-a desenat. Se vede prost, dar se vede.
+]]
+function GameController.showEmote(self: GameController, payload)
+	local emote = Emotes.get(payload.EmoteId)
+	if not emote then
+		return
+	end
+
+	SoundController.playEmote(emote.Id)
+
+	local userId = payload.UserId
+	if type(userId) ~= "number" then
+		return
+	end
+
+	local views = self.Views
+	local card = if type(payload.Slot) == "number" then views.Hud:cardFor(payload.Slot) else nil
+	if card then
+		EmoteBubble.overCard(userId, card, emote.Symbol)
+		return
+	end
+
+	local player = EmoteBubble.playerOf(userId)
+	if views.World and player then
+		EmoteBubble.overHead(player, emote.Symbol)
+	end
+end
+
+--[[
 	Traduce un cod de refuz in text. Cazul special e cel mai important din
 	joc: baricada respinsa fiindca ar taia ultimul drum al cuiva.
 ]]
 function GameController.onRejected(self: GameController, reason: string)
 	local message = REJECTION_TEXT[reason]
+
+	-- Refuzurile provocarilor le spune `SocialController`, in lobby, nu HUD-ul meciului.
+	if type(reason) == "string" and string.sub(reason, 1, 10) == "CHALLENGE_" then
+		return
+	end
+
+	-- Un refuz de revansa nu e o mutare gresita: nu clipeste tabla, doar se stinge butonul.
+	if type(reason) == "string" and string.sub(reason, 1, 8) == "REMATCH_" then
+		self.Views.Victory:setRematch("CLOSED")
+		self.Views.Hud:showToast(message or "No rematch.")
+		return
+	end
 
 	if not message then
 		local blockedSlot = tonumber(string.match(reason or "", "^WOULD_BLOCK_PLAYER_(%d+)$"))
@@ -581,12 +910,161 @@ function GameController.onRejected(self: GameController, reason: string)
 
 	self.Views.Hud:showToast(message or reason or "That move was refused.")
 	self.Views.Board:flashInvalid()
-	SoundController.play("WallInvalid")
+	if isNoisy(reason) then
+		SoundController.play("WallInvalid")
+	end
+end
+
+--[[
+	Pleaca din meci — si asteapta.
+
+	Pana acum clientul se muta singur in lobby in aceeasi clipa, fara sa astepte
+	serverul, si de aici veneau doua lucruri stricate deodata. Intai, daca
+	plecarea ta incheia meciul, nu apucai sa vezi asta niciodata: interfata
+	sarea in lobby peste o camera care ramanea agatata deasupra mesei, fiindca
+	nimeni nu-i spusese sa plece de acolo. Al doilea, camera nu se dezlega pana
+	cand nu pleca si adversarul — atributul `ArenaId` se sterge abia cand se
+	darama masa, iar masa se daramă abia atunci.
+
+	Acum serverul hotaraste cand pleci: iti trimite starea finala daca meciul
+	tocmai s-a terminat, te lasa sa vezi ceremonia castigatorului, si abia apoi
+	iti trimite `LobbyUpdate`. Aici se stinge doar HUD-ul — butoanele nu mai au
+	pe ce sa lucreze — si se tine minte ca esti pe plecare.
+]]
+--[[
+	Adversarii de la masa care nu-ti sunt inca prieteni: lor li se pune ADD
+	FRIEND pe ecranul de final. Coechipierii din 2v2 nu intra — jucati deja
+	impreuna, iar randul e pentru cei pe care i-ai cunoscut ca adversari.
+]]
+function GameController.strangers(
+	self: GameController,
+	state: BoardState
+): { { UserId: number, Name: string } }
+	local me = if self.LocalSlot then state.Players[self.LocalSlot] else nil
+	local social = self.Views.Social
+	local list = {}
+	for slot = 1, #state.Players do
+		local player = state.Players[slot]
+		local opponent = player and slot ~= self.LocalSlot and (not me or player.Team ~= me.Team)
+		if opponent and player.UserId > 0 and not (social and social:isFriend(player.UserId)) then
+			table.insert(list, { UserId = player.UserId, Name = player.Name })
+		end
+	end
+	return list
+end
+
+--[[
+	„Rematch #3 · 2–1" din seria trimisa de server, scrisa dinspre jucatorul
+	local: tabara lui prima, apoi celelalte in ordinea sloturilor. In 2v2 o
+	tabara e o echipa, altfel un om.
+]]
+function GameController.seriesLabel(self: GameController, series: any): string?
+	local state = self.State
+	if
+		not state
+		or type(series) ~= "table"
+		or type(series.Games) ~= "number"
+		or type(series.Wins) ~= "table"
+	then
+		return nil
+	end
+
+	local me = if self.LocalSlot then state.Players[self.LocalSlot] else nil
+	local sides: { { number } } = {}
+	local byTeam: { [number]: { number } } = {}
+	local order: { number } = {}
+	for slot = 1, #state.Players do
+		local player = state.Players[slot]
+		if player then
+			local team = byTeam[player.Team]
+			if not team then
+				team = {}
+				byTeam[player.Team] = team
+				table.insert(order, player.Team)
+			end
+			table.insert(team, player.UserId)
+		end
+	end
+	if me and byTeam[me.Team] then
+		table.insert(sides, byTeam[me.Team])
+	end
+	for _, team in order do
+		if not me or team ~= me.Team then
+			table.insert(sides, byTeam[team])
+		end
+	end
+
+	return RematchVote.label({ Games = series.Games, Wins = series.Wins }, sides)
+end
+
+--[[
+	Starea votului de revansa, venita de la server.
+
+	Bannerul o deseneaza; aici se tine doar ecranul de final in pas cu ea: cat
+	se voteaza, numaratoarea spre lobby sta pe loc, iar dupa vot butonul nu se
+	mai aprinde — la masa asta revansa s-a jucat, sau s-a refuzat.
+]]
+function GameController.onRematch(self: GameController, payload: any)
+	local views = self.Views
+	local localUserId = Players.LocalPlayer.UserId
+	local accepted = if type(payload.Accepted) == "table" then payload.Accepted else {}
+
+	if views.Rematch then
+		views.Rematch:update(payload, localUserId)
+	end
+
+	if payload.Status == "Pending" then
+		views.Victory:stopTimeout()
+		if table.find(accepted, localUserId) then
+			views.Victory:setRematch("WAITING")
+		end
+	elseif payload.Status == "Accepted" then
+		views.Victory:setRematch("WAITING")
+	else
+		views.Victory:setRematch("CLOSED")
+	end
+end
+
+--[[
+	Dupa o revansa anulata. Cine o acceptase e intrebat daca vrea in coada
+	obisnuita — nu e aruncat singur acolo; ceilalti isi vad ecranul de final
+	inchizandu-se in cateva secunde, ca inainte.
+]]
+function GameController.afterRematch(self: GameController, accepted: boolean)
+	local views = self.Views
+	local state = self.State
+	local modeId = if state then state.GameMode else nil
+	local confirm = views.Confirm
+
+	if not accepted or not confirm or not modeId or not views.Victory:isOpen() then
+		if views.Victory:isOpen() then
+			views.Victory:startTimeout(GameConfig.Timing.RematchResume)
+		end
+		return
+	end
+
+	local mode = GameConfig.Modes[modeId]
+	confirm:ask({
+		Title = "FIND A NEW MATCH?",
+		Body = string.format(
+			"The rematch is off. Join the %s queue with other players?",
+			if mode then mode.DisplayName else modeId
+		),
+		Accept = "JOIN QUEUE",
+		Cancel = "MAIN MENU",
+	}, function(join: boolean)
+		views.Victory:hide()
+		self:leaveMatch()
+		if join then
+			Remotes.get("RequestJoinQueue"):FireServer(modeId)
+		end
+	end)
 end
 
 function GameController.leaveMatch(self: GameController)
+	self.Leaving = true
+	self.Views.Hud:setVisible(false)
 	Remotes.get("RequestLeaveMatch"):FireServer()
-	self:onLobby(nil)
 end
 
 return GameController

@@ -3,8 +3,8 @@
 	SoundController — sunetele scurte ale jocului.
 
 	Putine si discrete: o mutare, o baricada, un refuz, o schimbare de tura,
-	numaratoarea si victoria. Nimic in bucla, nicio muzica peste care sa nu
-	poti gandi.
+	numaratoarea si victoria. Singurul lucru in bucla e muzica de fundal, tinuta
+	destul de incet cat sa poti gandi peste ea — vezi `GameConfig.Music`.
 
 	Doua feluri, si se opresc altfel. Cele de aici ies din interfata si se
 	opresc pur si simplu nefiind pornite. Sunetul zidului insa e facut de server,
@@ -24,14 +24,56 @@ local ContentProvider = game:GetService("ContentProvider")
 local SoundService = game:GetService("SoundService")
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Emotes = require(ReplicatedStorage.Shared.Emotes)
 local GameConfig = require(ReplicatedStorage.Shared.GameConfig)
 local Audio = require(ReplicatedStorage.World.Audio)
 local Skins = require(ReplicatedStorage.World.Skins)
 
 local SoundController = {}
 
+--[[
+	Sunetul unui emote intra in aceeasi magazie ca toate celelalte, sub un nume
+	care nu se poate ciocni de cele din `GameConfig.Sounds`.
+
+	Asa emote-urile primesc pe degeaba tot ce are deja `play`: butonul de sunet
+	care le taie, pauza dintre doua porniri daca va fi nevoie, si aducerea din
+	vreme a fisierului. Alternativa — un `Sound` facut pe loc la fiecare apasare
+	— ar fi insemnat ca primul emote al partidei se aude cu intarziere sau deloc,
+	si ca butonul de sunet nu-l opreste.
+]]
+local function emoteSoundName(emoteId: string): string
+	return "Emote_" .. emoteId
+end
+
 local sounds: { [string]: Sound } = {}
 local enabled = true
+local music: Sound? = nil
+-- Comutatorul propriu al muzicii, din butonul de sus. SOUND le taie pe toate.
+local musicEnabled = true
+--[[
+	Muzica asteapta sa se ridice ecranul de incarcare. Pornita odata cu clientul,
+	se auzea peste cortina, iar primele masuri se pierdeau inainte sa se vada ceva.
+]]
+local musicAllowed = false
+
+--[[
+	Muzica suna doar cand o vor amandoua butoanele.
+
+	Se pune pe pauza, nu se opreste: la repornire continua de unde era, in loc
+	sa ia piesa de la capat de fiecare data cand cineva apasa.
+]]
+local function syncMusic()
+	local track = music
+	if not track then
+		return
+	end
+	local wanted = enabled and musicEnabled and musicAllowed
+	if wanted and not track.IsPlaying then
+		track:Resume()
+	elseif not wanted and track.IsPlaying then
+		track:Pause()
+	end
+end
 
 -- Cand a pornit ultima oara fiecare sunet care are pauza.
 local lastPlayed: { [string]: number } = {}
@@ -67,6 +109,9 @@ local function warmUp()
 		add(skin.PlaceSound)
 		add(skin.BlockedSound)
 	end
+	for _, id in Emotes.Order do
+		add(Emotes.All[id].SoundId)
+	end
 
 	if #wanted == 0 then
 		return
@@ -95,19 +140,49 @@ function SoundController.init()
 
 	warmUp()
 
-	for name, assetId in GameConfig.Sounds do
-		if assetId ~= 0 then
-			local sound = Instance.new("Sound")
-			sound.Name = name
-			sound.SoundId = string.format("rbxassetid://%d", assetId)
-			sound.Volume = GameConfig.SoundVolume[name] or 0.45
-			sound.Parent = folder
-			sounds[name] = sound
+	local function build(name: string, assetId: number)
+		if assetId == 0 then
+			return
 		end
+		local sound = Instance.new("Sound")
+		sound.Name = name
+		sound.SoundId = string.format("rbxassetid://%d", assetId)
+		sound.Volume = GameConfig.SoundVolume[name] or 0.45
+		sound.Parent = folder
+		sounds[name] = sound
+	end
+
+	for name, assetId in GameConfig.Sounds do
+		build(name, assetId)
+	end
+
+	for _, id in Emotes.Order do
+		build(emoteSoundName(id), Emotes.All[id].SoundId)
+	end
+
+	--[[
+		Muzica nu trece prin `play`: nu are pauza intre porniri si nu se cere
+		de nicaieri, porneste o data si nu se mai opreste decat din buton.
+	]]
+	if GameConfig.Music.Id ~= 0 then
+		local track = Instance.new("Sound")
+		track.Name = "Music"
+		track.SoundId = string.format("rbxassetid://%d", GameConfig.Music.Id)
+		track.Volume = GameConfig.Music.Volume
+		track.Looped = true
+		track.Parent = folder
+		music = track
+		syncMusic()
 	end
 end
 
-function SoundController.play(name: string)
+--[[
+	`speed` schimba inaltimea, prin `PlaybackSpeed`: numaratoarea din „+4" isi
+	urca tick-ul cu fiecare cifra, din acelasi fisier. Lipsa inseamna viteza
+	normala, si se pune la loc de fiecare data — altfel un sunet ar ramane pe
+	inaltimea ultimei cereri care a schimbat-o.
+]]
+function SoundController.play(name: string, speed: number?)
 	if not enabled then
 		return
 	end
@@ -133,7 +208,15 @@ function SoundController.play(name: string)
 		lastPlayed[name] = now
 	end
 
+	sound.PlaybackSpeed = speed or 1
 	Audio.play(sound)
+end
+
+--[[
+	Sunetul unui emote. Cine n-are id ramane tacut, ca oricare altul cu `0`.
+]]
+function SoundController.playEmote(emoteId: string)
+	SoundController.play(emoteSoundName(emoteId))
 end
 
 --[[
@@ -153,6 +236,7 @@ end
 function SoundController.setEnabled(value: boolean)
 	enabled = value
 	setWorldVolume(if value then 1 else 0)
+	syncMusic()
 end
 
 function SoundController.isEnabled(): boolean
@@ -162,6 +246,23 @@ end
 function SoundController.toggle(): boolean
 	SoundController.setEnabled(not enabled)
 	return enabled
+end
+
+-- Muzica de fundal, pornita sau oprita, fara sa atinga restul sunetelor.
+-- Da drumul muzicii, o singura data: dupa ce s-a ridicat ecranul de incarcare.
+function SoundController.allowMusic()
+	musicAllowed = true
+	syncMusic()
+end
+
+function SoundController.isMusicEnabled(): boolean
+	return musicEnabled
+end
+
+function SoundController.toggleMusic(): boolean
+	musicEnabled = not musicEnabled
+	syncMusic()
+	return musicEnabled
 end
 
 return SoundController

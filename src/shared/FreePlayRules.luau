@@ -20,6 +20,8 @@
 	incapa.
 ]]
 
+local GameConfig = require(script.Parent.GameConfig)
+
 local FreePlayRules = {}
 
 export type Decision = "WAIT" | "START" | "RESTART"
@@ -54,6 +56,38 @@ function FreePlayRules.decide(
 		jocul il mai asteapta sau l-a uitat acolo.
 	]]
 	return "RESTART"
+end
+
+--[[
+	Cati trebuie sa fie pe soclu ca sa se poata juca, si cati incap.
+
+	Se socotesc din modurile oferite, nu se scriu separat: minimul e cel mai mic
+	mod, capacitatea cel mai mare.
+]]
+function FreePlayRules.bounds(modeIds: { string }): (number, number)
+	local minimum, capacity = math.huge, 0
+	for _, modeId in modeIds do
+		local players = GameConfig.Modes[modeId].Players
+		minimum = math.min(minimum, players)
+		capacity = math.max(capacity, players)
+	end
+	return minimum, capacity
+end
+
+--[[
+	Ce mod se joaca cu `count` oameni pe soclu: cel mai mare care ii incape pe
+	toti. `nil` cand sunt prea putini pentru oricare.
+]]
+function FreePlayRules.modeFor(modeIds: { string }, count: number): string?
+	local best: string? = nil
+	local bestPlayers = 0
+	for _, modeId in modeIds do
+		local players = GameConfig.Modes[modeId].Players
+		if players <= count and players > bestPlayers then
+			best, bestPlayers = modeId, players
+		end
+	end
+	return best
 end
 
 return FreePlayRules

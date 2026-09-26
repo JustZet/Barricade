@@ -9,18 +9,18 @@
 
 	**Ce am gasit si ce am facut din el.** Modelul venea cu trei dungi portocalii
 	intinse intre cele doua boturi (`flame_ribbon_*`), cu doua guri aprinse, cu
-	trei pete de fum si cu cateva bile de jar. Dungile stateau nemiscate, deci se
-	citeau ca niste bare, nu ca flacari. Acum:
+	trei pete de fum si cu cateva bile de jar. Acum:
 
-	  - dungile **unduiesc**, fiecare cu faza ei, si se aprind dinspre botul care
-	    sufla spre celalalt; o flacara care sta pe loc nu e flacara, e o teava;
+	  - dungile dintre boturi sunt **sterse**: raman ascunse si nu mai poarta
+	    nimic. O perdea de flacara intre cei doi ii lega intr-o singura pata, si
+	    cu cateva ziduri pe tabla nu se mai vedea unde se termina unul;
 	  - gurile poarta `Fire`, focul din motor — nu cere nicio textura si arde
 	    singur;
-	  - petele de fum si bilele de jar se fac invizibile si devin guri de
-	    emitator: fum gros si lent care urca, jar marunt care sare;
+	  - petele de fum se ascund; bilele de jar se fac invizibile si devin guri de
+	    emitator: jar marunt care sare;
 	  - aurul de pe solzi, coarne si gheare **se incinge** cand trece suflul, si
-	    se raceste dupa. Asta leaga statuia de foc: altfel ar fi doua pietre cu o
-	    flacara intre ele.
+	    se raceste dupa. Asta leaga statuia de foc: altfel ar fi doua pietre care
+	    sufla fara sa simta nimic.
 
 	Suflul nu e continuu. Dragonii trag aer cateva secunde — ochii li se aprind,
 	jarul se inteteste — si abia apoi sufla. Pauza se trage la sorti, ca sa nu se
@@ -105,7 +105,7 @@ local GOLD = Color3.fromHex("e0b45c")
 	Ancora se alege singura: cea mai mare piesa pe care scriptul n-o atinge —
 	plinta zidului sau placa soclului. Daca modelul si-a pus `PrimaryPart`, ala e.
 ]]
-local ANIMATED = { "^flame_ribbon_%d+$", "^wing_[lr]_%d+$" }
+local ANIMATED = { "^wing_[lr]_%d+$" }
 
 local function chooseAnchor(): BasePart?
 	local function moves(name: string): boolean
@@ -142,35 +142,22 @@ end
 local home = anchor.CFrame
 
 --[[
-	Dungile dintre boturi: **nu se vad**, doar tin focul.
+	Dungile dintre boturi se sterg de tot.
 
-	Modelul le desenase ca trei bare lungi intre cele doua guri. Oricat de
-	transparente si oricat de unduite, tot bare ramaneau — muchii drepte, care
-	urcau si coborau prin cadru. Le facem invizibile si le pastram doar ca locuri
-	din care ies flacari: intre dragoni ramane foc, nu grinzi.
+	Modelul le desenase ca trei bare lungi intre cele doua guri. Au trecut prin
+	doua incercari: intai ascunse si folosite doar ca guri de emitator, ca sa
+	ramana foc in locul barelor; apoi si cu unduire, ca focul sa nu stea pe loc.
+	Amandoua rateaza acelasi lucru — **nu e nevoie de nimic acolo**. Doi dragoni
+	care sufla se citesc ca doi dragoni care sufla; o perdea de flacara intinsa
+	intre ei ii leaga intr-o singura pata portocalie, si cu cateva ziduri pe
+	tabla nu se mai vede unde se termina unul si incepe altul.
 
-	Se misca in continuare, incet, fiindca gura de emitator se muta odata cu ele
-	si focul iese altfel de la un cadru la altul. Se tin fata de ancora, nu fata
-	de lume, ca sa urmeze zidul oriunde ajunge.
+	Piesele raman ascunse, fiindca altfel modelul si-ar arata barele. Nimic nu
+	mai iese din ele si nimic nu le mai misca: focul ramane acolo unde are rost,
+	adica in guri.
 ]]
-type Ribbon = {
-	Part: BasePart,
-	Offset: CFrame,
-	Phase: number,
-	Sway: number,
-	Rate: number,
-}
-
-local ribbons: { Ribbon } = {}
-for index, part in collect("^flame_ribbon_%d+$") do
+for _, part in collect("^flame_ribbon_%d+$") do
 	hide(part)
-	table.insert(ribbons, {
-		Part = part,
-		Offset = home:ToObjectSpace(part.CFrame),
-		Phase = index * 2.1,
-		Sway = 0.12 + index * 0.06,
-		Rate = 3.4 + index * 0.9,
-	})
 end
 
 --[[
@@ -193,7 +180,7 @@ for _, mouth in mouths do
 	local fire = Instance.new("Fire")
 	fire.Name = "Breath"
 	fire.Color = EMBER
-	fire.SecondaryColor = Color3.fromHex("6b1f1d")
+	fire.SecondaryColor = Color3.fromHex("ff7a1a")
 	fire.Heat = 6
 	fire.Size = 1.6
 	fire.Parent = mouth
@@ -202,181 +189,22 @@ for _, mouth in mouths do
 	local light = Instance.new("PointLight")
 	light.Name = "MouthGlow"
 	light.Color = EMBER
-	light.Range = 18
-	light.Brightness = 1.4
+	light.Range = 10
+	light.Brightness = 0.5
 	light.Shadows = false
 	light.Parent = mouth
 	table.insert(mouthLights, light)
 end
 
 --[[
-	Jeturile: focul pe care un dragon il **sufla**, nu cel care ii arde in gura.
+	Jeturi intre dragoni **nu mai sunt**.
 
-	`Fire` urca intotdeauna spre cer, fiindca asa arde focul — bun pentru ce
-	licareste in bot, nedrept pentru doi dragoni care isi trimit suflul unul
-	altuia. Deci fiecare gura mai primeste si un emitator asezat intr-o
-	`Attachment` **intoarsa spre gura celuilalt**: particulele pleaca inainte,
-	iar inainte inseamna acum „spre celalalt dragon". Cele doua jeturi se
-	intalnesc la mijloc, exact acolo unde stau dungile de foc.
+	Fiecare gura trimitea spre celalalt un emitator cu textura lui `Fire`
+	(`fire_main`). Amestecata normal, nu aditiv, textura aia iese maro-inchis:
+	cele doua jeturi se intalneau la mijloc, urcau si lasau la fiecare suflare
+	o coloana de funingine intre dragoni. Suflul se citeste destul din focul din
+	guri, din lumina lor si din aurul care se incinge.
 ]]
---[[
-	Cum arata o flacara, si de ce nu arata asa din prima.
-
-	Un `ParticleEmitter` proaspat vine cu `sparkles_main` — o steluta cu raze.
-	Oricat ai schimba culoarea si viteza, o steluta portocalie ramane o steluta
-	portocalie: de aceea jetul se citea ca scantei, nu ca foc. Motorul are insa
-	in casa si textura cu care arde `Fire`, `fire_main`, care e o pata moale,
-	fara colturi — si aia e flacara.
-
-	Doua lucruri o fac sa se miste ca focul, nu ca un nor de puncte:
-
-	  - **`VelocityParallel`** intoarce fiecare particula pe directia in care
-	    zboara, deci flacara se lungeste pe drumul ei in loc sa stea cu fata la
-	    camera ca un abtibild;
-	  - **`Squash`** o intinde la nastere, cat e iute, si o lasa sa se rotunjeasca
-	    pe masura ce incetineste — exact ce face o limba de foc care se rupe de
-	    jet si se ridica.
-
-	Culoarea merge alb → galben → portocaliu → rosu stins, nu invers: focul e alb
-	acolo unde e cel mai fierbinte, adica la gura, si se raceste pe drum.
-]]
-local FLAME_TEXTURE = "rbxasset://textures/particles/fire_main.dds"
-
-local JET_COLOR = ColorSequence.new({
-	ColorSequenceKeypoint.new(0, Color3.fromHex("fff6d8")),
-	ColorSequenceKeypoint.new(0.22, Color3.fromHex("ffd166")),
-	ColorSequenceKeypoint.new(0.55, Color3.fromHex("ff7a1a")),
-	ColorSequenceKeypoint.new(1, Color3.fromHex("8a1c08")),
-})
-
-local JET_FADE = NumberSequence.new({
-	NumberSequenceKeypoint.new(0, 0.55),
-	NumberSequenceKeypoint.new(0.12, 0.05),
-	NumberSequenceKeypoint.new(0.55, 0.3),
-	NumberSequenceKeypoint.new(1, 1),
-})
-
-local JET_SIZE = NumberSequence.new({
-	NumberSequenceKeypoint.new(0, 0.55),
-	NumberSequenceKeypoint.new(0.4, 2.1),
-	NumberSequenceKeypoint.new(1, 0.5),
-})
-
---[[
-	Perdeaua arde mai domol decat jetul: porneste galben, nu alb, si se stinge in
-	rosu afumat. Albul e pentru ce iese sub presiune din gura.
-]]
-local FLAME_COLOR = ColorSequence.new({
-	ColorSequenceKeypoint.new(0, Color3.fromHex("ffd166")),
-	ColorSequenceKeypoint.new(0.4, Color3.fromHex("ff7a1a")),
-	ColorSequenceKeypoint.new(1, Color3.fromHex("7a1205")),
-})
-
-local FLAME_FADE = NumberSequence.new({
-	NumberSequenceKeypoint.new(0, 0.3),
-	NumberSequenceKeypoint.new(0.15, 0.08),
-	NumberSequenceKeypoint.new(0.6, 0.45),
-	NumberSequenceKeypoint.new(1, 1),
-})
-
-local JET_STRETCH = NumberSequence.new({
-	NumberSequenceKeypoint.new(0, 1.8),
-	NumberSequenceKeypoint.new(0.5, 0.6),
-	NumberSequenceKeypoint.new(1, 0),
-})
-
-local jets: { ParticleEmitter } = {}
-
-local function jetFrom(mouth: BasePart, target: BasePart)
-	local spout = Instance.new("Attachment")
-	spout.Name = "Spout"
-	spout.CFrame = mouth.CFrame:ToObjectSpace(CFrame.lookAt(mouth.Position, target.Position))
-	spout.Parent = mouth
-
-	local emitter = Instance.new("ParticleEmitter")
-	emitter.Name = "Jet"
-	emitter.Texture = FLAME_TEXTURE
-	emitter.Orientation = Enum.ParticleOrientation.VelocityParallel
-	emitter.Squash = JET_STRETCH
-	emitter.Color = JET_COLOR
-	emitter.Size = JET_SIZE
-	emitter.Transparency = JET_FADE
-	emitter.Lifetime = NumberRange.new(0.38, 0.62)
-	emitter.Speed = NumberRange.new(8, 13)
-	emitter.SpreadAngle = Vector2.new(9, 9)
-	emitter.EmissionDirection = Enum.NormalId.Front
-	--[[
-		Flacara se ridica pe masura ce incetineste, ca orice foc: tragerea in sus
-		si frecarea impreuna fac jetul sa se curbeze spre cer in loc sa mearga
-		drept ca un glont.
-	]]
-	emitter.Acceleration = Vector3.new(0, 7, 0)
-	emitter.Drag = 2.6
-	emitter.LightEmission = 0.7
-	emitter.LightInfluence = 0
-	emitter.Rate = 30
-	emitter.Parent = spout
-
-	table.insert(jets, emitter)
-end
-
-if mouthL and mouthR then
-	jetFrom(mouthL, mouthR)
-	jetFrom(mouthR, mouthL)
-end
-
---[[
-	Dungile de foc primesc si ele particule.
-
-	O dunga singura ramane o bara: se vede unde incepe si unde se termina. Cu un
-	emitator pe toata lungimea ei, bara devine miezul fierbinte al unei flacari
-	care fumega in sus — si atunci muchia nu se mai citeste.
-]]
-local streams: { ParticleEmitter } = {}
-
-for _, ribbon in ribbons do
-	local emitter = Instance.new("ParticleEmitter")
-	emitter.Name = "Flame"
-	emitter.Texture = FLAME_TEXTURE
-	--[[
-		Aici particulele urca incet, deci raman cu fata la camera.
-
-		Intinse pe directia de zbor, ca la jeturi, ajungeau atat de subtiri incat
-		nu se mai vedeau deloc: la viteza mica, o flacara lungita e o dunga de
-		nimic. Jeturile isi permit — ele zboara.
-	]]
-	emitter.Orientation = Enum.ParticleOrientation.FacingCamera
-	emitter.Color = FLAME_COLOR
-	emitter.Size = NumberSequence.new({
-		NumberSequenceKeypoint.new(0, 1.1),
-		NumberSequenceKeypoint.new(0.45, 1.7),
-		NumberSequenceKeypoint.new(1, 0.2),
-	})
-	emitter.Transparency = FLAME_FADE
-	emitter.Lifetime = NumberRange.new(0.5, 0.9)
-	emitter.Speed = NumberRange.new(2, 4)
-	emitter.SpreadAngle = Vector2.new(22, 22)
-	emitter.EmissionDirection = Enum.NormalId.Top
-	emitter.Acceleration = Vector3.new(0, 7, 0)
-	emitter.Drag = 1.4
-	--[[
-		Putina luminiscenta, nu toata. Trasa la maxim, flacara se albeste si se
-		spala complet pe un cer luminos — ramane o aburire palida in locul focului.
-	]]
-	emitter.LightEmission = 0.35
-	emitter.LightInfluence = 0
-	--[[
-		Perdeaua de foc dintre dragoni tine si intre suflari.
-
-		Zidul trebuie sa se citeasca drept zid chiar cand nimeni nu sufla: acolo
-		unde erau barele, acum trebuie sa fie flacara. Trei dungi ascunse, fiecare
-		cu rata ei mica, acopera toata deschiderea — si nu au muchii.
-	]]
-	emitter.Rate = 26
-	emitter.Parent = ribbon.Part
-
-	table.insert(streams, emitter)
-end
 
 --[[
 	Jarul: bilele portocalii ale modelului, facute invizibile si puse sa emita.
@@ -422,7 +250,7 @@ for _, dot in collect("^spark_%d+$") do
 	emitter.Drag = 2.2
 	emitter.Rotation = NumberRange.new(0, 360)
 	emitter.RotSpeed = NumberRange.new(-140, 140)
-	emitter.LightEmission = 1
+	emitter.LightEmission = 0.5
 	emitter.LightInfluence = 0
 	emitter.Rate = 4
 	emitter.Parent = dot
@@ -431,47 +259,14 @@ for _, dot in collect("^spark_%d+$") do
 end
 
 --[[
-	Fumul: petele cenusii ale modelului, tot guri de emitator.
+	Petele de fum ale modelului raman doar ascunse.
 
-	Gros, lent si mare, cu particule care cresc pe masura ce se ridica si se
-	subtiaza pana dispar. Fumul nu straluceste, deci e singurul emitator de aici
-	care primeste lumina lumii in loc sa si-o dea pe a lui.
+	Din ele ieseau nori cenusii care urcau intre dragoni si, adunati peste foc,
+	se citeau ca o coloana de funingine in mijlocul soclului. Suflul se vede si
+	fara ei.
 ]]
-local SMOKE_COLOR = ColorSequence.new(Color3.fromHex("b9a99c"), Color3.fromHex("6f6257"))
-
-local SMOKE_FADE = NumberSequence.new({
-	NumberSequenceKeypoint.new(0, 1),
-	NumberSequenceKeypoint.new(0.3, 0.72),
-	NumberSequenceKeypoint.new(1, 1),
-})
-
-local SMOKE_SIZE = NumberSequence.new({
-	NumberSequenceKeypoint.new(0, 0.6),
-	NumberSequenceKeypoint.new(1, 2.6),
-})
-
-local smokes: { ParticleEmitter } = {}
-
 for _, puff in collect("^smoke_%d+$") do
 	hide(puff)
-
-	local emitter = Instance.new("ParticleEmitter")
-	emitter.Name = "Smoke"
-	emitter.Color = SMOKE_COLOR
-	emitter.Size = SMOKE_SIZE
-	emitter.Transparency = SMOKE_FADE
-	emitter.Lifetime = NumberRange.new(1.8, 3)
-	emitter.Speed = NumberRange.new(0.8, 1.6)
-	emitter.SpreadAngle = Vector2.new(20, 20)
-	emitter.Acceleration = Vector3.new(0, 1.6, 0)
-	emitter.Rotation = NumberRange.new(0, 360)
-	emitter.RotSpeed = NumberRange.new(-24, 24)
-	emitter.LightEmission = 0
-	emitter.LightInfluence = 1
-	emitter.Rate = 2.5
-	emitter.Parent = puff
-
-	table.insert(smokes, emitter)
 end
 
 --[[
@@ -663,9 +458,6 @@ RunService.Heartbeat:Connect(function(delta: number)
 			for _, emitter in embers do
 				emitter:Emit(math.random(10, 18))
 			end
-			for _, emitter in jets do
-				emitter:Emit(math.random(14, 22))
-			end
 		end
 	else
 		heat = math.sin(math.min(clock / BREATH, 1) * math.pi) * 0.55 + 0.45
@@ -678,19 +470,6 @@ RunService.Heartbeat:Connect(function(delta: number)
 
 	-- ------------------------------------------------------------ miscarea
 	local wave = life
-
-	for _, ribbon in ribbons do
-		--[[
-			Unda trece prin dunga, nu o muta intreaga: se roteste putin in jurul
-			axei ei lungi si urca-coboara, ca o limba de flacara prinsa la capete.
-		]]
-		local swing = math.sin(wave * ribbon.Rate + ribbon.Phase)
-		local roll = math.cos(wave * ribbon.Rate * 0.7 + ribbon.Phase)
-		ribbon.Part.CFrame = home
-			* ribbon.Offset
-			* CFrame.new(0, swing * ribbon.Sway * (1 + heat), 0)
-			* CFrame.Angles(roll * 0.12 * (1 + heat), 0, 0)
-	end
 
 	--[[
 		Bataia, in planul aripii: o rotatie in jurul axei care iese din placa.
@@ -742,7 +521,7 @@ RunService.Heartbeat:Connect(function(delta: number)
 		fire.Color = EMBER:Lerp(BLAZE, heat)
 	end
 	for _, light in mouthLights do
-		light.Brightness = (1.2 + heat * 5) * flicker
+		light.Brightness = (0.45 + heat * 1.6) * flicker
 		light.Color = EMBER:Lerp(WHITE, heat * 0.6)
 	end
 
@@ -755,16 +534,7 @@ RunService.Heartbeat:Connect(function(delta: number)
 		metal.Part.Color = metal.Base:Lerp(EMBER, heat * 0.8)
 	end
 
-	for _, emitter in jets do
-		emitter.Rate = 26 + heat * 150
-	end
-	for _, emitter in streams do
-		emitter.Rate = 26 + heat * 60
-	end
 	for _, emitter in embers do
 		emitter.Rate = 4 + heat * 40
-	end
-	for _, emitter in smokes do
-		emitter.Rate = 2.5 + heat * 6
 	end
 end)

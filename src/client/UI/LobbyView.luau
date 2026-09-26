@@ -17,6 +17,8 @@
 ]]
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local TweenService = game:GetService("TweenService")
+
 local Shared = ReplicatedStorage.Shared
 local GameConfig = require(Shared.GameConfig)
 
@@ -35,10 +37,14 @@ type LobbyFields = {
 	StartButton: TextButton,
 	-- Poate lipsi: se construieste doar cand magazinul are cu ce se desena.
 	StoreButton: TextButton?,
+	HelpButton: TextButton,
 	-- Pagina de alegere a modului.
 	Panel: Frame,
 	Modes: Frame,
 	BackButton: TextButton,
+	-- Pagina cu regulile.
+	Help: Frame,
+	HelpClose: TextButton,
 	Queue: Frame,
 	QueueTitle: TextLabel,
 	QueueMode: TextLabel,
@@ -58,6 +64,48 @@ export type LobbyView = typeof(setmetatable({} :: LobbyFields, LobbyView))
 	calculata.
 ]]
 local HOME_MARGIN = 16
+
+--[[
+	Regulile, asa cum se spun la masa cuiva care nu le stie.
+
+	Jocul e Quoridor, si asta e problema: doi din trei oameni care intra n-au
+	auzit de el niciodata. Vad o tabla, un pion si un buton pe care scrie
+	BARRICADE, si singurul fel de a afla ce fac e sa piarda o partida. Pana si
+	regula care tine tot jocul in picioare — ca poti incetini pe cineva dar nu-l
+	poti zidi — nu se poate ghici din nimic de pe ecran: se afla din refuzul
+	primit dupa ce ai incercat.
+
+	Textul e scris pe pasi, nu ca regulament, si spune la fiecare si *ce apesi*.
+	Partea a treia e cea pentru care exista panoul asta.
+]]
+local HELP_STEPS = {
+	{
+		Title = "1 · Move",
+		Body = "On your turn you step one square — up, down, left or right. "
+			.. "The squares you may enter light up green; tap one and you are there. "
+			.. "If another player stands right next to you, you hop over them.",
+	},
+	{
+		Title = "2 · Or drop a barricade",
+		Body = "Instead of moving, you may spend one barricade. It sits <b>between</b> two "
+			.. "squares and nobody can cross it — not even you. "
+			.. "Tap BARRICADE, aim at the seam between the squares, R (or the rotate button) "
+			.. "turns it, and a tap puts it down. You only get a handful for the whole match.",
+	},
+	{
+		Title = "3 · You may block, never seal",
+		Body = "A barricade is allowed to send someone the long way round. It is "
+			.. "<b>never</b> allowed to leave a player with no way through at all. "
+			.. "The board checks every player before it accepts one, so a barricade that "
+			.. "would shut somebody in is refused — and you keep it.",
+	},
+	{
+		Title = "4 · Win the race",
+		Body = "Reach the far side of the board, or the middle square, depending on the "
+			.. "mode. Everyone has their own five-minute clock, and it only runs on their "
+			.. "own turn.",
+	},
+}
 
 local MODE_SUBTITLES = {
 	["1v1"] = "Two players · 10 barricades · reach the far side",
@@ -123,6 +171,29 @@ function LobbyView.new(parent: Instance): LobbyView
 
 	self.StartButton.MouseButton1Click:Connect(function()
 		self:showModes()
+	end)
+
+	--[[
+		Regulile, la stanga lui START.
+
+		Simetric cu magazinul din dreapta, si pentru acelasi motiv: mijlocul
+		ramane al singurei actiuni principale. Butonul nu se ascunde niciodata si
+		nu depinde de niciun asset — un jucator care nu stie jocul trebuie sa dea
+		peste el din prima privire, nu sa-l caute intr-un meniu de setari.
+	]]
+	self.HelpButton = Theme.button({
+		Name = "Help",
+		Text = "HOW TO PLAY",
+		TextSize = 15,
+		Skin = "Secondary",
+		AnchorPoint = Vector2.new(1, 0.5),
+		Position = UDim2.new(0, -16, 0.5, 0),
+		Size = UDim2.fromOffset(148, 56),
+		Parent = home,
+	})
+
+	self.HelpButton.MouseButton1Click:Connect(function()
+		self:showHelp()
 	end)
 
 	--[[
@@ -252,6 +323,130 @@ function LobbyView.new(parent: Instance): LobbyView
 		self:showHome()
 	end)
 
+	-- ------------------------------------------------------------- regulile
+	--[[
+		Panoul cu regulile e mai inalt decat celelalte si are derulare.
+
+		Restul paginilor din lobby au continut de dimensiune stiuta — patru
+		moduri, patru locuri in coada — si incap intr-o inaltime fixa. Regulile
+		nu: pe un telefon intors pe lat, patru pasi de text nu au unde sa stea.
+		`AutomaticCanvasSize` lasa lista sa-si spuna singura inaltimea, iar
+		panoul se opreste la cat ecran e.
+	]]
+	local help = Theme.create("Frame", {
+		Name = "Help",
+		BackgroundColor3 = Theme.Color.Surface,
+		BorderSizePixel = 0,
+		AnchorPoint = Vector2.new(0.5, 0.5),
+		Position = UDim2.fromScale(0.5, 0.5),
+		Size = UDim2.new(0, 520, 0.86, 0),
+		Visible = false,
+		Parent = root,
+	}, {
+		Theme.corner(Theme.Radius.Large),
+		Theme.stroke(Theme.Color.Line, 1),
+		Theme.padding(24),
+		Theme.create("UISizeConstraint", { MaxSize = Vector2.new(520, 560) }),
+	}) :: Frame
+	self.Help = help
+
+	Theme.text({
+		Name = "HelpTitle",
+		Text = "HOW TO PLAY",
+		Font = Theme.Font.Bold,
+		TextSize = 22,
+		TextXAlignment = Enum.TextXAlignment.Center,
+		Size = UDim2.new(1, 0, 0, 30),
+		Parent = help,
+	})
+
+	Theme.text({
+		Name = "HelpLead",
+		Text = "A race across the board. Everyone runs for their own goal, and everyone "
+			.. "may get in everyone else's way.",
+		TextColor3 = Theme.Color.TextMuted,
+		TextSize = 14,
+		TextWrapped = true,
+		TextXAlignment = Enum.TextXAlignment.Center,
+		Position = UDim2.fromOffset(0, 34),
+		Size = UDim2.new(1, 0, 0, 36),
+		Parent = help,
+	})
+
+	local steps = Theme.create("ScrollingFrame", {
+		Name = "Steps",
+		BackgroundTransparency = 1,
+		BorderSizePixel = 0,
+		Position = UDim2.fromOffset(0, 78),
+		Size = UDim2.new(1, 0, 1, -136),
+		CanvasSize = UDim2.new(),
+		AutomaticCanvasSize = Enum.AutomaticSize.Y,
+		ScrollBarThickness = 4,
+		ScrollBarImageColor3 = Theme.Color.Line,
+		ScrollingDirection = Enum.ScrollingDirection.Y,
+		Parent = help,
+	}, {
+		Theme.create("UIListLayout", {
+			Padding = UDim.new(0, 14),
+			SortOrder = Enum.SortOrder.LayoutOrder,
+		}),
+		-- Bara de derulare nu are voie sa stea peste text.
+		Theme.create("UIPadding", { PaddingRight = UDim.new(0, 10) }),
+	}) :: ScrollingFrame
+
+	for index, step in HELP_STEPS do
+		local entry = Theme.create("Frame", {
+			Name = "Step" .. index,
+			BackgroundTransparency = 1,
+			AutomaticSize = Enum.AutomaticSize.Y,
+			Size = UDim2.fromScale(1, 0),
+			LayoutOrder = index,
+			Parent = steps,
+		}, {
+			Theme.create("UIListLayout", {
+				Padding = UDim.new(0, 4),
+				SortOrder = Enum.SortOrder.LayoutOrder,
+			}),
+		}) :: Frame
+
+		Theme.text({
+			Name = "Title",
+			Text = step.Title,
+			Font = Theme.Font.Bold,
+			TextSize = 17,
+			TextColor3 = Theme.Color.Highlight,
+			Size = UDim2.new(1, 0, 0, 20),
+			LayoutOrder = 1,
+			Parent = entry,
+		})
+
+		Theme.text({
+			Name = "Body",
+			Text = step.Body,
+			TextSize = 14,
+			TextColor3 = Theme.Color.TextMuted,
+			TextWrapped = true,
+			AutomaticSize = Enum.AutomaticSize.Y,
+			Size = UDim2.fromScale(1, 0),
+			LayoutOrder = 2,
+			Parent = entry,
+		})
+	end
+
+	self.HelpClose = Theme.button({
+		Name = "HelpClose",
+		Text = "GOT IT",
+		Skin = "Primary",
+		AnchorPoint = Vector2.new(0.5, 1),
+		Position = UDim2.fromScale(0.5, 1),
+		Size = UDim2.fromOffset(180, 42),
+		Parent = help,
+	})
+
+	self.HelpClose.MouseButton1Click:Connect(function()
+		self:showHome()
+	end)
+
 	-- ------------------------------------------------------------ coada
 	local queue = Theme.create("Frame", {
 		Name = "Queue",
@@ -351,11 +546,66 @@ end
 	Starile lobby-ului nu stau niciodata doua deodata pe ecran, iar tinerea lor
 	intr-un singur loc e ce impiedica o pagina uitata deschisa sub alta.
 ]]
+--[[
+	Pagina care tocmai s-a deschis creste pana la marimea ei.
+
+	Panourile lobby-ului apareau taiate: intr-un cadru nu era nimic, in
+	urmatorul era o placa de lemn cat jumatate din ecran. Nu e o problema de
+	frumusete — o aparitie instantanee nu spune de unde a venit fereastra, si
+	ochiul are nevoie de un cadru-doua ca sa o lege de butonul pe care tocmai
+	l-ai apasat.
+
+	Nu si la inchidere: acolo ai apasat deja „inapoi" si vrei sa fii in spate,
+	nu sa te uiti cum pleaca ceva.
+]]
+local PAGE_POP = 0.18
+
+local function popIn(page: GuiObject)
+	--[[
+		Scara se face o singura data si ramane a paginii. Facuta din nou la
+		fiecare deschidere, ar fi lasat in urma cate un `UIScale` mort la fiecare
+		intrare in meniu.
+	]]
+	local existing = page:FindFirstChildOfClass("UIScale")
+	local scale: UIScale
+	if existing then
+		scale = existing
+	else
+		scale = Instance.new("UIScale")
+		scale.Parent = page
+	end
+
+	scale.Scale = 0.88
+	TweenService
+		:Create(scale, TweenInfo.new(PAGE_POP, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
+			Scale = 1,
+		})
+		:Play()
+end
+
 function LobbyView.setPage(self: LobbyView, page: string)
-	self.Home.Visible = page == "HOME"
-	self.Panel.Visible = page == "MODES"
-	self.Queue.Visible = page == "QUEUE"
-	self.Countdown.Visible = page == "COUNTDOWN"
+	--[[
+		Cresterea se face doar pentru pagina care *se deschide acum*. Pusa la
+		fiecare `setPage`, s-ar fi repornit si cand pagina era deja pe ecran — iar
+		lista din coada se redeseneaza la fiecare jucator care intra, deci panoul
+		ar fi tresarit la fiecare nume nou.
+	]]
+	local pages: { [string]: GuiObject } = {
+		HOME = self.Home,
+		MODES = self.Panel,
+		HELP = self.Help,
+		QUEUE = self.Queue,
+		COUNTDOWN = self.Countdown,
+	}
+
+	for name, frame in pages do
+		local wanted = name == page
+		if wanted and not frame.Visible and name ~= "HOME" then
+			popIn(frame)
+		end
+		frame.Visible = wanted
+	end
+
 	self.Dim.Visible = page ~= "HOME"
 	self.Root.Visible = true
 end
@@ -367,6 +617,15 @@ end
 
 function LobbyView.showModes(self: LobbyView)
 	self:setPage("MODES")
+end
+
+--[[
+	Regulile. Se inchid inapoi in „acasa", nu in pagina din care s-a venit:
+	panoul se deschide doar de acolo, si nu are rost sa tina minte un drum de
+	un singur pas.
+]]
+function LobbyView.showHelp(self: LobbyView)
+	self:setPage("HELP")
 end
 
 --[[

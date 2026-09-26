@@ -16,7 +16,7 @@ Dacă cineva ar rămâne fără drum, plasarea e respinsă și baricada nu se co
 
 ```bash
 aftman install          # unelte: rojo, stylua, selene, luau-lsp, lune
-lune run tests/run      # 108 de teste de reguli, fără Roblox
+lune run tests/run      # 170 de teste de reguli, fără Roblox
 rojo serve              # apoi „Connect" din plugin-ul Rojo în Studio
 ```
 
@@ -35,7 +35,7 @@ la primul pic, ca să vezi tot ce e stricat dintr-o trecere, și iese cu cod `1`
 se plânge. CI rulează exact acest fișier, deci „trece local” și „trece pe GitHub” nu pot
 să se despartă.
 
-Toate trec curat: **0 erori de tip, 0 avertismente de lint, 108/108 teste**.
+Toate trec curat: **0 erori de tip, 0 avertismente de lint, 170/170 teste**.
 
 ---
 
@@ -53,6 +53,9 @@ Asta are două consecințe care se văd peste tot în proiect:
    sunt două.
 
 ```
+src/boot/            ReplicatedFirst: cortina, înainte de primul cadru
+  init.client        ecranul de încărcare, preîncărcarea lumii, ridicarea cortinei
+
 src/shared/          motorul — pur, testabil, comun clientului și serverului
   Types              contractul de date
   GameConfig         singurul loc cu numere reglabile
@@ -61,8 +64,13 @@ src/shared/          motorul — pur, testabil, comun clientului și serverului
   WallRules          cele șase condiții de plasare a unei baricade
   Pathfinding        BFS: „mai există drum?"
   BoardState         starea + cele două acțiuni care o schimbă
-  Rewards            câți bănuți face un meci, câștigat sau pierdut
-  FreePlayRules      când pleacă meciul pornit de pe soclu
+  Rewards            câți bănuți face un meci, cu bonusurile sociale pe rânduri
+  FreePlayRules      când pleacă meciul pornit de pe soclu și în ce mod
+  MoveCommentary     ce merită strigat după o mutare: blocaj, săritură, un pas
+  Callouts           catalogul strigătelor: text, culori, mărime, sunet
+  RematchVote        votul de revanșă, rotația locurilor și scorul seriei
+  Challenge          provocarea directă: cine poate provoca pe cine, și răspunsul
+  Referral           cine primește bănuți pentru o invitație, și cât
   Catalog            ce se poate deține: id-uri, prețuri, obiectele de start
   Loadout            cu ce joci din ce ai: verificarea și numele atributelor
   Remotes            numele canalelor de rețea
@@ -73,10 +81,14 @@ src/server/          autoritatea
   Managers/MatchManager    registrul meciurilor
   Managers/MatchmakingManager  cozi simple per mod
   Managers/FreePlay        soclul din arenă: cine așteaptă, când pleacă meciul
+  Managers/Rematch         votul de revanșă la aceeași masă
+  Managers/Challenges      provocările directe și prezența fiecăruia (meci, coadă)
   Services/RateLimiter     token bucket per jucător și canal
   Services/Wallet          bănuții: sold, câștig, cheltuială, DataStore
   Services/Inventory       ce deține fiecare jucător, DataStore
   Services/Loadout         ce poartă din ce deține, ca atribut pe Player
+  Services/Friends         cine e prieten cu cine în server, verificat o dată
+  Services/Social          invitațiile: profil, recompense, DataStore
 
 src/client/          desenul
   init.client        ecranul, camera fixă, pornirea
@@ -85,6 +97,7 @@ src/client/          desenul
   Controllers/SoundController     sunetele
   Controllers/InputController     R / Escape / M
   Controllers/ShowcaseController  cumpărarea de la vitrinele din lobby
+  Controllers/SocialController    prieteni, provocări, lista de jucători
   UI/Theme           paleta, fontul, constructorul declarativ
   UI/BoardView       tabla: celule, baricade, pioni, previzualizare
   UI/HudView         carduri, tura, butoane, contor, setări
@@ -94,8 +107,13 @@ src/client/          desenul
   UI/StoreView       magazinul: rafturile, cumpărarea și echiparea
   UI/OfferView       eticheta plutitoare de deasupra unei vitrine
   UI/ItemWell        caseta în care se vede un obiect, aceeași peste tot
+  UI/CalloutView     textul animat de pe tablă de după fiecare mutare
+  UI/RematchView     bannerul votului de revanșă
+  UI/PlayersView     „Players in server" și alegerea provocării
+  UI/ChallengeView   bannerul provocării primite sau trimise
+  UI/SocialToast     notificările sociale din colț
 
-tests/               harness lune + 108 de teste de reguli
+tests/               harness lune + 170 de teste de reguli
 ```
 
 ---

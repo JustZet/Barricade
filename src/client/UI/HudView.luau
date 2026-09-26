@@ -27,6 +27,7 @@ local Types = require(Shared.Types)
 
 local AnimationController = require(script.Parent.Parent.Controllers.AnimationController)
 local Avatars = require(script.Parent.Avatars)
+local EmoteView = require(script.Parent.EmoteView)
 local Theme = require(script.Parent.Theme)
 
 type BoardState = Types.BoardState
@@ -62,8 +63,27 @@ local MIN_SCALE = 0.55
 ]]
 local TOP_BAR_H = 22
 
+--[[
+	Coltul din dreapta sus: cat aer ramane pana la marginea ecranului, si cat de
+	lata e caseta contorului.
+
+	Doua sute douazeci incap "TURN 12 · 1v1v1v1" fara sa se taie, si tot atat se
+	scade din latimea pe care o au cardurile inainte sa se atinga de el — vezi
+	`fit`.
+]]
+local TOP_MARGIN, COUNTER_W = 16, 220
+
 local BOTTOM_MARGIN, BOTTOM_BAR_H, BOTTOM_BAR_W = 16, 70, 460
 local SETTINGS_W = 150
+
+--[[
+	Butonul de emote: cat e de mare, si cat gol ramane intre el si setari.
+
+	Stau aici, langa celelalte masuri ale randului de jos, fiindca `fit` le
+	socoteste impreuna: latimea care trebuie sa incapa in jumatatea de ecran e
+	suma lor, si o valoare tinuta separat s-ar fi despartit de calcul.
+]]
+local EMOTE_W, EMOTE_GAP = 56, 10
 
 --[[
 	Cardul, si golul dintre doua carduri.
@@ -115,6 +135,7 @@ type HudFields = {
 	SoundButton: TextButton,
 	ViewButton: TextButton,
 	LeaveButton: TextButton,
+	Emote: EmoteView.EmoteView,
 }
 
 export type HudView = typeof(setmetatable({} :: HudFields, HudView))
@@ -154,39 +175,32 @@ function HudView.new(parent: Instance): HudView
 	}) :: Frame
 	self.Root = root
 
-	-- ------------------------------------------------------------ bara de sus
+	-- ------------------------------------------------------------ randul de sus
 	--[[
-		Randul de sus e singurul care se intinde pe toata latimea, deci nu se
-		micsoreaza ca celelalte: ce sta in el e lipit de mijloc, iar mijlocul nu
-		se muta, oricat de lat ar fi ecranul. Sta la pixelul zero, in dunga pe
-		care bara Roblox o lasa libera intre butoanele ei si lista de jucatori.
-	]]
-	local topBar = Theme.create("Frame", {
-		Name = "TopBar",
-		BackgroundTransparency = 1,
-		Size = UDim2.new(1, 0, 0, TOP_BAR_H),
-		Parent = root,
-	}) :: Frame
+		Contorul de ture s-a mutat in coltul din dreapta.
 
-	--[[
-		Contorul de ture sta la mijloc, nu in coltul din dreapta.
+		La mijloc statea pe acelasi ax cu cardurile, si le tinea pe loc: cardurile
+		nu puteau urca peste el, asa ca incepeau cu douazeci si doi de pixeli mai
+		jos decat ar fi trebuit — adica peste primul rand de celule al tablei, pe
+		care in 3D il vezi de sus si il folosesti cel mai des. Mutat la dreapta,
+		randul de sus se elibereaza si cardurile urca la pixelul zero.
 
-		Colturile de sus nu sunt ale noastre: in stanga Roblox pune meniul, chatul
-		si microfonul, iar in dreapta lista de jucatori — exact peste ea cadea
-		contorul, si se citea pe jumatate. La mijloc e singura bucata de rand pe
-		care n-o cere nimeni, si cade oricum chiar deasupra cardurilor, care sunt
-		si ele centrate.
+		Coltul e liber de cand lista de jucatori a Roblox-ului e stinsa din
+		client. Ce ramane al lui acolo nu ajunge pana aici.
+
+		Cand n-are loc — patru carduri pe un ecran ingust — coboara sub ele, si
+		asta se hotaraste in `fit`, unde se stie cat de lat a iesit randul.
 	]]
 	self.TurnCounter = Theme.text({
 		Name = "TurnCounter",
 		Text = "",
 		TextColor3 = Theme.Color.TextMuted,
 		TextSize = 14,
-		TextXAlignment = Enum.TextXAlignment.Center,
-		AnchorPoint = Vector2.new(0.5, 0),
-		Position = UDim2.fromScale(0.5, 0),
-		Size = UDim2.fromScale(0.6, 1),
-		Parent = topBar,
+		TextXAlignment = Enum.TextXAlignment.Right,
+		AnchorPoint = Vector2.new(1, 0),
+		Position = UDim2.new(1, -TOP_MARGIN, 0, 0),
+		Size = UDim2.fromOffset(COUNTER_W, TOP_BAR_H),
+		Parent = root,
 	})
 
 	-- ------------------------------------------------------- panoul jucatorilor
@@ -196,12 +210,17 @@ function HudView.new(parent: Instance): HudView
 		Pe coloana din stanga intrau peste meniul si chatul Roblox, care ocupa
 		exact coltul acela pe orice ecran. La mijloc raman libere, se citesc toate
 		dintr-o privire si nu acopera tabla, care in 3D incepe mai jos.
+
+		Incep de la pixelul zero, nu de sub randul contorului: contorul a plecat
+		in coltul din dreapta, deci nu mai are ce sa le tina pe loc. Cei douazeci
+		si doi de pixeli castigati sunt exact cat lasa descoperit primul rand de
+		celule, acela peste care cardurile cadeau.
 	]]
 	local playersPanel = Theme.create("Frame", {
 		Name = "PlayersPanel",
 		BackgroundTransparency = 1,
 		AnchorPoint = Vector2.new(0.5, 0),
-		Position = UDim2.new(0.5, 0, 0, TOP_BAR_H),
+		Position = UDim2.fromScale(0.5, 0),
 		Size = UDim2.fromOffset(980, CARD_H),
 		Parent = root,
 	}, {
@@ -260,11 +279,24 @@ function HudView.new(parent: Instance): HudView
 		Parent = actions,
 	})
 
+	--[[
+		Scria „R", si atat.
+
+		Litera e tasta, nu actiunea, si e de folos doar cuiva care are tastatura
+		si stie deja ce face. Pe telefon nu exista nici tasta, nici bulina de
+		ajutor care sa spuna ce e „R" — ramanea un patrat cu o litera pe el,
+		langa singurul lucru din joc care are doua orientari. Scrie acum ce face;
+		tasta merge mai departe, pentru cine o are.
+
+		Latimea e cat a mai ramas din bara: cele trei butoane si spatiile dintre
+		ele umplu acum exact `BOTTOM_BAR_W`.
+	]]
 	self.RotateButton = Theme.button({
 		Name = "RotateButton",
-		Text = "R",
-		Skin = "Square",
-		Size = UDim2.fromOffset(46, 46),
+		Text = "ROTATE",
+		TextSize = 15,
+		Skin = "Secondary",
+		Size = UDim2.fromOffset(120, 46),
 		LayoutOrder = 3,
 		Parent = actions,
 	})
@@ -351,6 +383,32 @@ function HudView.new(parent: Instance): HudView
 		Size = UDim2.fromOffset(150, 34),
 		LayoutOrder = 3,
 		Parent = settings,
+	})
+
+	--[[
+		Emote-urile, la stanga stivei de setari.
+
+		Nu **in** ea: sunetul, perspectiva si plecarea sunt reglaje ale ecranului
+		tau, pe care le atingi o data si le uiti. Un emote e o vorba catre
+		celalalt, se da des si se da repede, deci are nevoie de o tinta proprie,
+		mai mare decat o pastila si asezata unde cade degetul.
+
+		Sta in HUD, si nu langa el, ca sa intre in aceeasi masuratoare: `fit`
+		micsoreaza butoanele impreuna pe ecran mic, iar unul lasat pe dinafara ar
+		fi ramas mare peste celelalte micsorate.
+	]]
+	self.Emote = EmoteView.new(root)
+	self.Emote.Root.Position =
+		UDim2.new(1, -(BOTTOM_MARGIN + SETTINGS_W + EMOTE_GAP), 1, -BOTTOM_MARGIN)
+	table.insert(self.TouchScales, shrinkable(self.Emote.Root))
+
+	self.Emote:setCallbacks({
+		onEmote = function(id: string)
+			local callback = self.Callbacks.onEmote
+			if callback then
+				callback(id)
+			end
+		end,
 	})
 
 	self.MoveButton.MouseButton1Click:Connect(function()
@@ -472,11 +530,36 @@ function HudView.fit(self: HudView)
 	end
 
 	--[[
+		Contorul sta in coltul din dreapta cat timp randul de carduri nu ajunge
+		pana la el, si coboara sub ele cand ajunge.
+
+		Randul e centrat, deci marginea lui din dreapta creste cu numarul de
+		jucatori: doua carduri se opresc pe la doua treimi de ecran, patru ajung
+		aproape de margine. Lasat sus cu orice pret, contorul ar fi cazut peste
+		cardul din capat exact in modurile in care sunt cei mai multi de urmarit.
+
+		Coborat, sta tot in dreapta si tot sub acelasi text — doar ca pe randul
+		de sub carduri, unde nu e nimic.
+	]]
+	local rowRight = viewport.X / 2 + (row * scale) / 2
+	local counterLeft = viewport.X - TOP_MARGIN - COUNTER_W
+	self.TurnCounter.Position = if rowRight > counterLeft
+		then UDim2.new(1, -TOP_MARGIN, 0, CARD_H * scale)
+		else UDim2.new(1, -TOP_MARGIN, 0, 0)
+
+	--[[
 		Cat de departe poate ajunge coltul cu setarile de mijlocul ecranului
 		inainte sa intre peste butoanele de actiune. Jumatate din bara de jos,
 		plus coloana din dreapta, plus doua margini.
 	]]
-	local room = (viewport.X / 2 - BOTTOM_MARGIN * 2) / (BOTTOM_BAR_W / 2 + SETTINGS_W)
+	--[[
+		Butonul de emote s-a asezat intre setari si bara de actiuni, deci intra si
+		el in socoteala: jumatatea din dreapta a randului de jos trebuie sa tina
+		acum jumatate din bara, setarile, si emote-ul cu golul lui. Lasat pe
+		dinafara, pe un ecran ingust bara de actiuni ar fi intrat peste el.
+	]]
+	local room = (viewport.X / 2 - BOTTOM_MARGIN * 2)
+		/ (BOTTOM_BAR_W / 2 + SETTINGS_W + EMOTE_GAP + EMOTE_W)
 	local touch = math.min(math.max(scale, TOUCH_FLOOR), room, 1)
 	for _, shrink in self.TouchScales do
 		shrink.Scale = touch
@@ -501,6 +584,22 @@ function HudView.setVisible(self: HudView, visible: boolean)
 		self:fit()
 	end
 	self.Root.Visible = visible
+	--[[
+		Raftul de emote-uri nu supravietuieste stingerii HUD-ului. Ascuns odata
+		cu el si lasat deschis, ar reaparea desfacut la meciul urmator, peste o
+		tabla la care nimeni nu se astepta sa gaseasca un meniu deschis.
+	]]
+	if not visible then
+		self.Emote:setOpen(false)
+	end
+end
+
+--[[
+	Cardul unui jucator, pentru cine are nevoie sa aseze ceva langa el — balonul
+	de emote, cand nu exista lume 3D de care sa se agate.
+]]
+function HudView.cardFor(self: HudView, slot: number): Frame?
+	return self.Cards[slot]
 end
 
 -- ------------------------------------------------------------ carduri
@@ -683,6 +782,27 @@ local function buildCard(state: BoardState, slot: number, parent: Instance): Fra
 		Parent = card,
 	})
 
+	--[[
+		Randul de jos, cand omul nu mai e la masa.
+
+		Sta peste ceas si peste ziduri, si le ia locul in loc sa se inghesuie
+		langa ele — fiindca atunci cand cineva pica, ceasul si zidurile lui nu
+		mai spun nimic: ceasul nu mai curge, iar baricadele nu le mai pune
+		nimeni. Ce trebuie citit dintr-o privire e un singur lucru, si e ce
+		scrie aici.
+	]]
+	Theme.text({
+		Name = "Status",
+		Text = "",
+		Font = Theme.Font.Bold,
+		TextSize = 14,
+		TextXAlignment = Enum.TextXAlignment.Left,
+		Position = UDim2.fromOffset(100, 46),
+		Size = UDim2.fromOffset(134, 24),
+		Visible = false,
+		Parent = card,
+	})
+
 	return card
 end
 
@@ -692,7 +812,25 @@ function HudView.buildCards(self: HudView, state: BoardState)
 	end
 	self.Cards = {}
 
-	for _, slot in state.TurnOrder do
+	--[[
+		Cardurile se fac dupa cine joaca, nu dupa cine e la rand.
+
+		`TurnOrder` isi pierde slotul cand cineva se retrage — asta e chiar
+		treaba lui, sa spuna cine mai muta — iar cardurile construite din el
+		dispareau odata cu omul. Ramaneai singur pe ecran, fara sa-ti spuna
+		nimeni ce s-a intamplat cu celalalt: cardul lui pur si simplu nu mai era.
+
+		`Players` nu pierde pe nimeni: retragerea ii pune `Connected = false` si
+		il lasa acolo. De acolo se construiesc, si de aceea cardul ramane si
+		dupa ce omul a plecat — vezi randul „Status" din `buildCard`.
+	]]
+	local slots = {}
+	for slot in state.Players do
+		table.insert(slots, slot)
+	end
+	table.sort(slots)
+
+	for _, slot in slots do
 		self.Cards[slot] = buildCard(state, slot, self.PlayersPanel)
 	end
 
@@ -714,6 +852,68 @@ function HudView.update(self: HudView, state: BoardState, localSlot: number?)
 	for slot, card in self.Cards do
 		local player = state.Players[slot]
 		if player then
+			--[[
+				Trei stari, si se deosebesc dupa doua intrebari.
+
+				`Connected` spune daca omul e la calculatorul lui. `TurnOrder`
+				spune daca mai are ce cauta in meci: retragerea il scoate de
+				acolo si nu-l mai pune inapoi niciodata. Impreuna:
+
+				- conectat            → joaca; ceas si ziduri, ca pana acum
+				- picat, dar in ordine → s-a deconectat si e asteptat sa revina
+				- picat si scos       → a iesit; meciul merge fara el
+
+				A doua si a treia arata la fel de departe — card stins, cu o
+				vorba in locul ceasului — dar nu spun acelasi lucru, si tocmai
+				asta trebuia sa se vada: pe unul il astepti, pe celalalt nu.
+			]]
+			local playing = player.Connected
+			local awaited = not playing and table.find(state.TurnOrder, slot) ~= nil
+
+			--[[
+				Niciuna dintre ele nu e rosie.
+
+				Rosul din paleta e al refuzurilor — zidul care nu intra, mutarea
+				respinsa — adica al lucrurilor pe care tocmai le-ai incercat si
+				n-au mers. Cineva caruia i-a picat internetul nu e o greseala a
+				ta, si nici macar o veste proasta inca: poate se intoarce. Pus in
+				rosu, cardul lui striga mai tare decat propriul tau ceas.
+
+				Deosebirea o fac cuvantul si cat de stins e scris: „DISCONNECTED"
+				se citeste inca limpede, fiindca s-ar putea sa te intereseze cat
+				mai astepti; „LEFT THE MATCH" e deja istorie si se retrage in
+				fundal.
+			]]
+			local status = card:FindFirstChild("Status") :: TextLabel
+			status.Visible = not playing
+			if not playing then
+				status.Text = if awaited then "DISCONNECTED" else "LEFT THE MATCH"
+				status.TextColor3 = if awaited
+					then Theme.Color.TextMuted
+					else Theme.Color.disabledText
+			end
+
+			--[[
+				Ceasul si zidurile se retrag cu totul, nu se sting.
+
+				Stinse, ar fi ramas doua cifre pe langa vorba de alaturi, si
+				ochiul le-ar fi citit tot ca pe niste cifre ale cuiva care
+				joaca. Randul are loc pentru un singur lucru.
+			]]
+			for _, name in { "ClockIcon", "Clock", "WallIcon", "Barricades" } do
+				local part = card:FindFirstChild(name)
+				if part then
+					(part :: GuiObject).Visible = playing
+				end
+			end
+
+			--[[
+				Avatarul se stinge pe jumatate. Culoarea si chipul raman — e tot
+				el, si tot pe locul lui in sir — dar se vede ca nu mai e acolo.
+			]]
+			local avatar = card:FindFirstChild("Avatar") :: ImageLabel
+			avatar.ImageTransparency = if playing then 0 else 0.55
+
 			local isCurrent = slot == currentSlot and state.Status == "PLAYING"
 
 			--[[
@@ -728,11 +928,7 @@ function HudView.update(self: HudView, state: BoardState, localSlot: number?)
 			local marker = card:FindFirstChild("TurnMarker") :: ImageLabel
 			marker.Visible = isCurrent
 
-			--[[
-				Langa semnul zidurilor sta doar cifra: semnul spune deja ce sunt.
-				Deconectarea nu mai incape in text si nu mai are nevoie — numele
-				se stinge, si asta se vede dintr-o privire pe tot cardul.
-			]]
+			-- Langa semnul zidurilor sta doar cifra: semnul spune deja ce sunt.
 			local label = card:FindFirstChild("Barricades") :: TextLabel
 			label.Text = tostring(player.BarricadesRemaining)
 
@@ -810,15 +1006,32 @@ function HudView.setBanner(self: HudView, text: string, color: Color3?)
 end
 
 --[[
-	Mesaj scurt pentru o actiune refuzata. Nu blocheaza nimic si nu cere
-	niciun clic: dispare singur.
+	Mesaj scurt, deasupra butoanelor. Nu blocheaza nimic si nu cere niciun clic:
+	dispare singur.
+
+	Doua tonuri, pe acelasi rand de text, fiindca e acelasi loc de pe ecran si
+	n-are rost sa existe doua:
+
+	- `ERROR` e raspunsul la ceva ce tocmai ai incercat si nu s-a putut. Rosu,
+	  cu tresarirea care spune „asta n-a mers", si scurt: stii deja ce ai apasat.
+	- `HINT` e o vorba spusa inainte sa incerci. Nu tresare — n-a gresit nimeni
+	  nimic — si sta mai mult, fiindca se citeste de cineva care nu stie inca
+	  unde sa se uite.
 ]]
-function HudView.showToast(self: HudView, message: string)
+local TOAST_HOLD = { ERROR = 2.2, HINT = 6.5 }
+
+function HudView.showToast(self: HudView, message: string, tone: string?)
+	local kind = if tone == "HINT" then "HINT" else "ERROR"
+
 	self.Toast.Text = message
 	self.Toast.TextTransparency = 0
-	AnimationController.shake(self.Toast)
+	self.Toast.TextColor3 = if kind == "HINT" then Theme.Color.TextMuted else Theme.Color.Invalid
 
-	task.delay(2.2, function()
+	if kind == "ERROR" then
+		AnimationController.shake(self.Toast)
+	end
+
+	task.delay(TOAST_HOLD[kind], function()
 		if self.Toast.Text == message then
 			AnimationController.tween(self.Toast, { TextTransparency = 1 }, 0.4, "fade")
 		end

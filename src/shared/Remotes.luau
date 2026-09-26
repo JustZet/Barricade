@@ -22,10 +22,25 @@ local REQUESTS = {
 	"RequestJoinQueue",
 	"RequestLeaveQueue",
 	"RequestLeaveMatch",
+	--[[
+		Revansa la aceeasi masa. Primul care o cere deschide votul; ceilalti
+		raspund cu aceeasi cerere (da) sau cu refuzul de dedesubt (nu). Nu se
+		trimite nimic altceva: masa si cine sta la ea le stie serverul.
+	]]
 	"RequestRematch",
+	"RequestRematchDecline",
+	--[[
+		Provocarea directa. Pleaca modul si userId-urile celor provocati; cine
+		sunt, daca sunt liberi si daca nu te-au refuzat de curand afla serverul.
+		Raspunsul (da/nu) si renuntarea duc id-ul provocarii.
+	]]
+	"RequestChallenge",
+	"RequestChallengeAnswer",
+	"RequestChallengeCancel",
 	-- Cererea de cumparare. Trimite doar id-ul articolului: pretul il stie
 	-- serverul din catalog, si un pret venit de la client n-ar insemna nimic.
 	"RequestPurchase",
+	"RequestGift",
 	--[[
 		Cererea de echipare. Trimite felul si id-ul, atat: daca obiectul e al
 		lui se afla pe server, din inventar.
@@ -35,6 +50,14 @@ local REQUESTS = {
 		proprietar, iar un atribut ajunge la toti dintr-o singura scriere.
 	]]
 	"RequestEquip",
+	--[[
+		Un emote. Pleaca doar id-ul din `Emotes`; ce inseamna el — semn, sunet —
+		il stie si clientul celuilalt, din acelasi catalog. Raspunsul vine inapoi
+		ca `MatchEvent`, la toata masa, inclusiv la cel care l-a trimis: asa toti
+		vad acelasi lucru in aceeasi clipa, si nimeni nu-si deseneaza singur un
+		balon pe care ceilalti nu-l au.
+	]]
+	"RequestEmote",
 }
 
 -- Server -> client. Fapte deja intamplate.
@@ -47,6 +70,12 @@ local BROADCASTS = {
 	"WalletUpdate",
 	-- Ce detine jucatorul. La fel, numai spre client.
 	"InventoryUpdate",
+	--[[
+		Tot ce e social si nu tine de un meci: prietenii din server, provocarile,
+		recompensele pentru invitatii. Un singur canal, cu `Type` in el, ca
+		`MatchEvent`.
+	]]
+	"SocialEvent",
 }
 
 local Remotes = {}

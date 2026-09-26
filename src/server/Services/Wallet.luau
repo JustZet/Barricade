@@ -293,6 +293,31 @@ function Wallet.release(player: Player)
 end
 
 --[[
+	A mai avut jucatorul asta vreodata un sold salvat?
+
+	E semnul dupa care `Social` stie ca un om nu e la prima intrare, desi el
+	insusi n-are inca nimic scris despre el — serviciul social e mai nou decat
+	portofelul. Intoarce `nil` cand nu se poate afla: DataStore oprit sau
+	banuti de test in Studio. Nestiut nu inseamna „nou".
+]]
+function Wallet.hasHistory(userId: number): boolean?
+	if testingCoins() > 0 then
+		return nil
+	end
+	local kept = store
+	if not kept then
+		return nil
+	end
+	local ok, saved = pcall(function()
+		return kept:GetAsync(keyFor(userId))
+	end)
+	if not ok then
+		return nil
+	end
+	return saved ~= nil
+end
+
+--[[
 	Porneste serviciul: intrari, iesiri, salvare periodica si la inchidere.
 
 	Se cheama o singura data, de la pornirea serverului.

@@ -268,6 +268,35 @@ function BoardView.buildWallSlots(self: BoardView)
 	end
 end
 
+--[[
+	Unde se vede pe ecran un loc de pe tabla, in pixeli.
+
+	Pentru o baricada, mijlocul ei; pentru o celula, marginea de sus, ca un text
+	asezat acolo sa stea deasupra pionului, nu peste el. Se socoteste din
+	aceleasi `cellPosition` si `wallRect` care deseneaza tabla, deci nu poate
+	arata alt loc decat cel desenat — inclusiv randul intors de `renderRow`.
+
+	`nil` cat tabla nu se vede: un punct pe o tabla ascunsa n-ar arata nimic.
+]]
+function BoardView.screenPoint(self: BoardView, cell: Cell, wall: Types.Wall?): Vector2?
+	if not self.Container.Visible then
+		return nil
+	end
+
+	local scale: Vector2
+	if wall then
+		local position, size = wallRect(wall.X, wall.Y, wall.Orientation)
+		scale =
+			Vector2.new(position.X.Scale + size.X.Scale / 2, position.Y.Scale + size.Y.Scale / 2)
+	else
+		local position = cellPosition(cell.X, cell.Y)
+		scale = Vector2.new(position.X.Scale + CELL / 2, position.Y.Scale)
+	end
+
+	local grid = self.Grid
+	return grid.AbsolutePosition + grid.AbsoluteSize * scale
+end
+
 function BoardView.setCallbacks(self: BoardView, callbacks: { [string]: any })
 	self.Callbacks = callbacks
 end
@@ -277,44 +306,31 @@ end
 --[[
 	Arata unde trebuie sa ajunga jucatorul local. Fara asta, un nou-venit
 	nu are de unde sti incotro joaca.
+
+	Aceeasi culoare ca pe tabla 3D, `GameConfig.GoalColor`, fie ca tinta e un
+	rand intreg, fie o singura celula in centru.
 ]]
+local GOAL_COLOR = Color3.fromHex(string.format("%06X", GameConfig.GoalColor))
+
 function BoardView.renderTarget(self: BoardView, objective: Types.Objective?)
 	self.TargetLayer:ClearAllChildren()
 	if not objective then
 		return
 	end
 
-	if objective.Kind == "CENTER" then
-		local cell = objective.Cell or { X = 5, Y = 5 }
+	for _, cell in BoardUtils.getTargetCells(objective) do
 		Theme.create("Frame", {
-			BackgroundTransparency = 1,
+			BackgroundColor3 = GOAL_COLOR,
+			BackgroundTransparency = 0.6,
+			BorderSizePixel = 0,
 			Position = cellPosition(cell.X, cell.Y),
 			Size = UDim2.fromScale(CELL, CELL),
 			ZIndex = 2,
 			Parent = self.TargetLayer,
 		}, {
 			Theme.corner(Theme.Radius.Small),
-			Theme.stroke(Theme.Color.Accent, 2, 0.2),
+			Theme.stroke(GOAL_COLOR, 2, 0.2),
 		})
-		return
-	end
-
-	for index = 1, SIZE do
-		local cell: Cell = if objective.Edge == "Y_MAX"
-			then { X = index, Y = SIZE }
-			elseif objective.Edge == "Y_MIN" then { X = index, Y = 1 }
-			elseif objective.Edge == "X_MAX" then { X = SIZE, Y = index }
-			else { X = 1, Y = index }
-
-		Theme.create("Frame", {
-			BackgroundColor3 = Theme.Color.Accent,
-			BackgroundTransparency = 0.88,
-			BorderSizePixel = 0,
-			Position = cellPosition(cell.X, cell.Y),
-			Size = UDim2.fromScale(CELL, CELL),
-			ZIndex = 2,
-			Parent = self.TargetLayer,
-		}, { Theme.corner(Theme.Radius.Small) })
 	end
 end
 

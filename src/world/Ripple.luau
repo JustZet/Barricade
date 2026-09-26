@@ -71,9 +71,36 @@ export type Options = {
 local DEFAULTS = {
 	Waves = 1.15,
 	Period = 1.9,
-	Rate = 30,
+	--[[
+		Douazeci si doi, nu treizeci.
+
+		Masurat in lobby: sase panze ondulate inseamna vreo treizeci si sase de
+		mii de `SetPosition` pe secunda, si tot atatea treceri prin puntea dintre
+		Luau si motor — de departe cel mai des apelat lucru din tot jocul. La
+		treizeci de rescrieri pe secunda panza nu arata cu nimic mai bine decat
+		la douazeci si doi: ochiul citeste valul dupa cat de repede **strabate**
+		panza, adica dupa `Period`, nu dupa des ce e redesenat drumul lui.
+	]]
+	Rate = 22,
 	Phase = 0,
 }
+
+--[[
+	Cat de des se rescrie o panza, dupa cat de departe e privita.
+
+	O panza de la capatul celalalt al lobby-ului ocupa cativa pixeli, iar valul
+	de pe ea cam unul. Rescrisa de douazeci si doua de ori pe secunda, costa
+	exact cat cea de langa tine si nu se vede nici pe sfert — asa ca isi rareste
+	singura pasul. E acelasi lucru pe care motorul il face cu geometria, doar ca
+	pentru miscare.
+
+	Pragurile sunt luate din lobby: pe la saizeci de studi te afli cam la
+	mijlocul insulei, iar la o suta douazeci esti la capat si privesti peste tot.
+	Inmultitorii sunt intregi si mici, ca panzele apropiate sa nu-si piarda
+	cadenta cand te apropii de prag si sa se vada trecerea.
+]]
+local NEAR_DISTANCE, FAR_DISTANCE = 60, 120
+local NEAR_STEP, FAR_STEP = 2, 4
 
 local TAU = math.pi * 2
 
@@ -403,7 +430,27 @@ function Ripple.attach(cloth: BasePart, hinge: Vector3, options: Options?): (Bas
 		if due > 0 then
 			return
 		end
-		due += interval
+
+		--[[
+			Pasul pana la urmatoarea rescriere se alege **dupa** ce s-a hotarat ca
+			una e datorata, nu inainte: asa o panza care tocmai a intrat in raza
+			apropiata nu ramane cu pasul lung pana la urmatorul ceas.
+
+			Fara camera — o clipa la pornire, sau in ecranul de incarcare — se
+			merge cu pasul plin. E starea in care oricum nu se vede nimic, si nu
+			merita o socoteala in plus la fiecare cadru.
+		]]
+		local camera = workspace.CurrentCamera
+		local step = 1
+		if camera then
+			local far = (cloth.Position - camera.CFrame.Position).Magnitude
+			if far > FAR_DISTANCE then
+				step = FAR_STEP
+			elseif far > NEAR_DISTANCE then
+				step = NEAR_STEP
+			end
+		end
+		due += interval * step
 
 		local travel = clock * TAU / period
 

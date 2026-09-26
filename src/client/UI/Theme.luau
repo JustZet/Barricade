@@ -18,6 +18,8 @@
 	Formele vin din asseturile `Assets.Token`, nu din culoarea de aici.
 ]]
 
+local TweenService = game:GetService("TweenService")
+
 local Theme = {}
 
 --[[
@@ -666,6 +668,46 @@ function Theme.button(properties: { [string]: any }): TextButton
 			button.BackgroundColor3 = color
 		end
 	end)
+
+	--[[
+		Butonul se lasa sub deget.
+
+		Pana acum singurul raspuns la o apasare era ce se intampla *dupa* ea —
+		se deschidea o pagina, pleca o cerere la server. Intre apasare si
+		raspuns nu se misca nimic, iar pe telefon, unde nu exista nici macar
+		hover-ul care sa spuna „esti pe buton", jumatate din apasari pareau
+		neinregistrate: le mai dadeai o data. Trei sutimi de scadere si o
+		intoarcere cu arc acopera tocmai golul ala.
+
+		Ridicarea se prinde si de `MouseLeave`, nu doar de `MouseButton1Up`: un
+		deget tras in lateral de pe buton nu mai da „up" pe el, si butonul ar fi
+		ramas turtit pana la urmatoarea atingere.
+
+		Scara sta pe butonul insusi, nu pe gramada din care face parte —
+		`HudView` pune deja acolo cate un `UIScale` pentru ecranele mici, iar
+		cele doua se inmultesc fara sa se incurce.
+	]]
+	local press = Theme.create("UIScale", { Scale = 1, Parent = button }) :: UIScale
+
+	local function pressTo(value: number, seconds: number, style: Enum.EasingStyle)
+		TweenService:Create(press, TweenInfo.new(seconds, style, Enum.EasingDirection.Out), {
+			Scale = value,
+		}):Play()
+	end
+
+	button.MouseButton1Down:Connect(function()
+		if not button.Active then
+			return
+		end
+		pressTo(0.96, 0.06, Enum.EasingStyle.Quad)
+	end)
+
+	local function release()
+		pressTo(1, 0.16, Enum.EasingStyle.Back)
+	end
+
+	button.MouseButton1Up:Connect(release)
+	button.MouseLeave:Connect(release)
 
 	return button
 end
